@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"fmt"
 
 	"github.com/labstack/echo/v4"
 
@@ -32,6 +33,10 @@ func main() {
 	flag.StringVar(&cfg.dbDir, "dbDir", "./app.db", "Database directory.")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development | staging | production)")
 	flag.Parse()
+
+	if cfg.env != "development" && cfg.env != "staging" && cfg.env != "production" {
+		panic(fmt.Errorf("invalid environment: '%s'", cfg.env))
+	}
 
 	db, err := sql.Open("sqlite3", cfg.dbDir)
 	if err != nil {
