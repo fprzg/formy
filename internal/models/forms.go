@@ -121,23 +121,14 @@ func (m *FormsModel) GetFormsByUser(userID int) ([]Form, error) {
 }
 
 func (m *FormsModel) UpdateFormName(formID int, name string) error {
-	const query = `
+	const stmt = `
 	UPDATE forms
 	SET name = ?, updated_at = CURRENT_TIMESTAMP
 	WHERE id = ?
 	`
 
-	result, err := m.db.Exec(query, name, formID)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
+	rows, err := ExecuteSqlStmt(m.db, stmt, name, formID)
+	if rows == 0 {
 		return ErrFormNotFound
 	}
 
@@ -151,17 +142,8 @@ func (m *FormsModel) UpdateFormDescription(formID int, description string) error
 	WHERE id = ?
 	`
 
-	result, err := m.db.Exec(query, description, formID)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
+	rows, err := ExecuteSqlStmt(m.db, query, description, formID)
+	if rows == 0 {
 		return ErrFormNotFound
 	}
 
@@ -169,21 +151,12 @@ func (m *FormsModel) UpdateFormDescription(formID int, description string) error
 }
 
 func (m *FormsModel) DeleteForm(formID int) error {
-	const query = `
+	const stmt = `
 	DELETE FROM forms WHERE id = ?
 	`
 
-	result, err := m.db.Exec(query, formID)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
+	rows, err := ExecuteSqlStmt(m.db, stmt, formID)
+	if rows == 0 {
 		return ErrFormNotFound
 	}
 

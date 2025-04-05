@@ -42,7 +42,7 @@ func (m *UsersModel) Insert(name, email, password string) error {
 		return ErrInvalidInput
 	}
 
-	if strings.Index(email, "@") == -1 {
+	if !strings.Contains(email, "@") {
 		return ErrInvalidInput
 	}
 
@@ -158,7 +158,7 @@ func (m *UsersModel) UpdateName(id int, name, password string) error {
 		return ErrInvalidInput
 	}
 
-	const query = `
+	const stmt = `
 	UPDATE users SET name = ? WHERE id = ?
 	`
 
@@ -167,7 +167,10 @@ func (m *UsersModel) UpdateName(id int, name, password string) error {
 		return err
 	}
 
-	_, err = m.db.Exec(query, name, id)
+	rows, err := ExecuteSqlStmt(m.db, stmt, name, id)
+	if rows == 0 {
+		return ErrUserNotFound
+	}
 
 	return err
 }
@@ -186,9 +189,16 @@ func (m *UsersModel) UpdateEmail(id int, email, password string) error {
 		return err
 	}
 
-	_, err = m.db.Exec(query, email, id)
-	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
-		return ErrDuplicateEmail
+	rows, err := ExecuteSqlStmt(m.db, query, email, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
+			return ErrDuplicateEmail
+		}
+	}
+
+	// Warn(Farid): This may not work
+	if rows == 0 {
+		return ErrUserNotFound
 	}
 
 	return err
@@ -213,7 +223,10 @@ func (m *UsersModel) UpdatePassword(id int, oldPwd, newPwdRaw string) error {
 		return err
 	}
 
-	_, err = m.db.Exec(query, string(newPwd), id)
+	rows, err := ExecuteSqlStmt(m.db, query, string(newPwd), id)
+	if rows == 0 {
+		return ErrUserNotFound
+	}
 
 	return err
 }

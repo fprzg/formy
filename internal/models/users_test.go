@@ -298,6 +298,7 @@ func TestUsersUpdateEmail(t *testing.T) {
 
 	tests := []struct {
 		TestName     string
+		userID       int
 		newEmail     string
 		currentPass  string
 		expectError  error
@@ -305,6 +306,7 @@ func TestUsersUpdateEmail(t *testing.T) {
 	}{
 		{
 			TestName:     "Successful update",
+			userID:       id,
 			newEmail:     "eve@new.com",
 			currentPass:  "pass",
 			expectError:  nil,
@@ -312,6 +314,7 @@ func TestUsersUpdateEmail(t *testing.T) {
 		},
 		{
 			TestName:     "Wrong password",
+			userID:       id,
 			newEmail:     "eve@wrongpass.com",
 			currentPass:  "wrong",
 			expectError:  ErrInvalidCredentials,
@@ -319,16 +322,25 @@ func TestUsersUpdateEmail(t *testing.T) {
 		},
 		{
 			TestName:     "Duplicated email",
+			userID:       id,
 			newEmail:     "used@example.com",
 			currentPass:  "pass",
 			expectError:  ErrDuplicateEmail,
+			expectedAuth: "eve@new.com",
+		},
+		{
+			TestName:     "Invalid ID",
+			userID:       0,
+			newEmail:     "used@example.com",
+			currentPass:  "pass",
+			expectError:  ErrInvalidCredentials,
 			expectedAuth: "eve@new.com",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			err := m.Users.UpdateEmail(id, tt.newEmail, tt.currentPass)
+			err := m.Users.UpdateEmail(tt.userID, tt.newEmail, tt.currentPass)
 			if tt.expectError == nil {
 				assert.NoError(t, err)
 			} else {

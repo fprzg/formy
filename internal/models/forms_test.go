@@ -246,7 +246,7 @@ func TestFormsUpdateFormDeleteForm(t *testing.T) {
 		{
 			TestName:      "Invalid form deletion",
 			formID:        0,
-			expectedError: nil,
+			expectedError: ErrFormNotFound,
 		},
 	}
 

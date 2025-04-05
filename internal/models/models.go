@@ -31,6 +31,20 @@ type Models struct {
 	Submissions SubmissionsModelInterface
 }
 
+func ExecuteSqlStmt(db *sql.DB, stmt string, args ...any) (int64, error) {
+	result, err := db.Exec(stmt, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rowsAffected, nil
+}
+
 func GetModels(db *sql.DB) Models {
 	return Models{
 		Users:       &UsersModel{db},
