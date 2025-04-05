@@ -53,8 +53,7 @@ func GetModels(db *sql.DB) Models {
 	}
 }
 
-// Should this one insert a lil bit of data (a user, two forms, some submitts)
-func setupTestDB(t *testing.T) Models {
+func SetupTestDB(t *testing.T) Models {
 	ctx, err := utils.NewMigrationCtx(":memory:", ":memory:", "../../migrations")
 	assert.NoError(t, err)
 
@@ -62,7 +61,7 @@ func setupTestDB(t *testing.T) Models {
 	assert.NoError(t, err)
 
 	m := GetModels(ctx.AppDB)
-	_ = insertTestUser(t, m, ValidUserName, ValidUserEmail, ValidUserPassword)
+	_ = InsertTestUser(t, m, ValidUserName, ValidUserEmail, ValidUserPassword)
 
 	const formFields = `[ {"field_name": "email", "field_type": "string", "contraints": ["unique"]} ]`
 	err = m.Forms.InsertForm(1, "form name", "form description", formFields)
@@ -73,7 +72,7 @@ func setupTestDB(t *testing.T) Models {
 	return m
 }
 
-func insertTestUser(t *testing.T, m Models, name, email, password string) int {
+func InsertTestUser(t *testing.T, m Models, name, email, password string) int {
 	err := m.Users.Insert(name, email, password)
 	assert.NoError(t, err)
 

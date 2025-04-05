@@ -12,7 +12,7 @@ func TestUsersInsert(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
 	tests := []struct {
 		TestName      string
@@ -76,7 +76,7 @@ func TestUsersAuthenticate(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
 	tests := []struct {
 		TestName      string
@@ -141,7 +141,7 @@ func TestUsersExists(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
 	tests := []struct {
 		TestName       string
@@ -184,7 +184,7 @@ func TestUsersGet(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
 	tests := []struct {
 		TestName      string
@@ -236,9 +236,9 @@ func TestUsersUpdateName(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
-	id := insertTestUser(t, m, "Dave", "dave@example.com", "pass")
+	id := InsertTestUser(t, m, "Dave", "dave@example.com", "pass")
 
 	tests := []struct {
 		TestName     string
@@ -291,10 +291,10 @@ func TestUsersUpdateEmail(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
-	id := insertTestUser(t, m, "Eve", "eve@old.com", "pass")
-	_ = insertTestUser(t, m, "Other", "used@example.com", "pass")
+	id := InsertTestUser(t, m, "Eve", "eve@old.com", "pass")
+	_ = InsertTestUser(t, m, "Other", "used@example.com", "pass")
 
 	tests := []struct {
 		TestName     string
@@ -358,9 +358,9 @@ func TestUsersUpdatePassword(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
-	id := insertTestUser(t, m, "Frank", "frank@example.com", "oldpass")
+	id := InsertTestUser(t, m, "Frank", "frank@example.com", "oldpass")
 
 	tests := []struct {
 		TestName        string

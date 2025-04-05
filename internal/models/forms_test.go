@@ -20,7 +20,7 @@ func TestFormsInsertForm(t *testing.T) {
 	]
 	`
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
 	tests := []struct {
 		TestName      string
@@ -77,7 +77,7 @@ func TestFormsGetForm(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
 	tests := []struct {
 		TestName      string
@@ -114,7 +114,7 @@ func TestFormsGetFormsByUser(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
 	tests := []struct {
 		TestName      string
@@ -151,7 +151,7 @@ func TestFormsUpdateFormName(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
 	tests := []struct {
 		TestName      string
@@ -191,7 +191,7 @@ func TestFormsUpdateFormDescription(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
 	tests := []struct {
 		TestName       string
@@ -231,7 +231,7 @@ func TestFormsUpdateFormDeleteForm(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := setupTestDB(t)
+	m := SetupTestDB(t)
 
 	tests := []struct {
 		TestName      string

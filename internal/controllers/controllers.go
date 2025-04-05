@@ -25,6 +25,9 @@ func GetRouter(env string) *echo.Echo {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	//
+	// API ROUTES
+	//
 	e.GET("/api/ping", pingHandle)
 
 	e.POST("/api/user/register", userRegisterHandle)
@@ -35,9 +38,16 @@ func GetRouter(env string) *echo.Echo {
 
 	e.POST("/api/submit/:id", submitHandle)
 
-	if env == "development" {
-		e.GET("/", dummyFormHandler)
-	}
+	//
+	// FRONTEND ROUTES
+	//
+	e.GET("/", dummyFormHandler)
+
+	//
+	// HTMX
+	//
+	//e.GET("/ui/user/:id", uiUsersGethandler)
+	//e.GET("/ui/form/:id", uiFormsGethandler)
 
 	return e
 }
@@ -172,7 +182,7 @@ func submitHandle(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{
 		"message": "success",
 		//"form_type": formType,
-		//"data": formValues,
+		"data": formValues,
 	})
 }
 
