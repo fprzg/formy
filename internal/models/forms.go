@@ -2,7 +2,7 @@ package models
 
 import (
 	"database/sql"
-	"fmt"
+	"strings"
 )
 
 type Form struct {
@@ -29,7 +29,8 @@ type FormsModelInterface interface {
 	InsertForm(userID int, name, description, fields string) error
 	GetForm(formID int) (Form, error)
 	GetFormsByUser(userID int) ([]Form, error)
-	UpdateForm(formID int, name, description, fields string) error
+	UpdateFormName(formID int, name string) error
+	UpdateFormDescription(formID int, description string) error
 	DeleteForm(formID int) error
 }
 
@@ -38,19 +39,26 @@ type FormsModel struct {
 }
 
 func (m *FormsModel) InsertForm(userID int, name, description, fields string) error {
+	if userID < 1 {
+		return ErrInvalidUserID
+	}
+	if name == "" || fields == "" {
+		return ErrInvalidInput
+	}
 	const queryForm = `
         INSERT INTO forms (user_id, name, description)
         VALUES (?, ?, ?)
-        RETURNING id, created_at, last_modified
+        RETURNING id, created_at, updated_at
     `
 
 	var f Form
 	err := m.db.QueryRow(queryForm, userID, name, description).Scan(&f.ID, &f.CreatedAt, &f.LastModified)
 	if err != nil {
+		if strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
+			return ErrInvalidUserID
+		}
 		return err
 	}
-
-	// TODO(Farid): Update the last_modified field on the referenced form
 
 	const queryFormInstance = `
 		INSERT INTO form_instances (form_id, fields)
@@ -67,7 +75,7 @@ func (m *FormsModel) InsertForm(userID int, name, description, fields string) er
 func (m *FormsModel) GetForm(formID int) (Form, error) {
 	//SELECT id, user_id, name, description, created_at, last_modified
 	const query = `
-        SELECT id, name, description, created_at, last_modified
+        SELECT id, name, description, created_at, updated_at
         FROM forms
         WHERE id = ?
     `
@@ -75,7 +83,7 @@ func (m *FormsModel) GetForm(formID int) (Form, error) {
 	var f Form
 	err := m.db.QueryRow(query, formID).Scan(&f.ID, &f.Name, &f.Description, &f.CreatedAt, &f.LastModified)
 	if err == sql.ErrNoRows {
-		return Form{}, fmt.Errorf("form not found")
+		return Form{}, ErrFormNotFound
 	}
 
 	return f, err
@@ -83,7 +91,7 @@ func (m *FormsModel) GetForm(formID int) (Form, error) {
 
 func (m *FormsModel) GetFormsByUser(userID int) ([]Form, error) {
 	const query = `
-    SELECT id, name, description, created_at, last_modified
+    SELECT id, name, description, created_at, updated_at
 	FROM forms
 	WHERE user_id = ?
 	`
@@ -112,10 +120,72 @@ func (m *FormsModel) GetFormsByUser(userID int) ([]Form, error) {
 	return forms, nil
 }
 
-func (m *FormsModel) UpdateForm(id int, name, description, fields string) error {
-	return nil
+func (m *FormsModel) UpdateFormName(formID int, name string) error {
+	const query = `
+	UPDATE forms
+	SET name = ?, updated_at = CURRENT_TIMESTAMP
+	WHERE id = ?
+	`
+
+	result, err := m.db.Exec(query, name, formID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrFormNotFound
+	}
+
+	return err
 }
 
-func (m *FormsModel) DeleteForm(id int) error {
-	return nil
+func (m *FormsModel) UpdateFormDescription(formID int, description string) error {
+	const query = `
+	UPDATE forms
+	SET description = ?, updated_at = CURRENT_TIMESTAMP
+	WHERE id = ?
+	`
+
+	result, err := m.db.Exec(query, description, formID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrFormNotFound
+	}
+
+	return err
+}
+
+func (m *FormsModel) DeleteForm(formID int) error {
+	const query = `
+	DELETE FROM forms WHERE id = ?
+	`
+
+	result, err := m.db.Exec(query, formID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrFormNotFound
+	}
+
+	return err
 }

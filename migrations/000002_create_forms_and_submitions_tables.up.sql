@@ -8,7 +8,7 @@ CREATE TABLE forms (
     name TEXT NOT NULL,
     description TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    last_modified TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -19,5 +19,5 @@ CREATE TABLE form_instances (
     form_id INTEGER NOT NULL,
     fields TEXT NOT NULL CHECK (json_valid(fields)),
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (form_id) REFERENCES forms(id)
+    FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE
 );

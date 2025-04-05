@@ -14,6 +14,9 @@ var (
 	ErrInvalidCredentials = errors.New("models: invalid credentials")
 	ErrDuplicateEmail     = errors.New("models: duplicate email")
 	ErrInvalidInput       = errors.New("models: invalid input")
+	ErrInvalidUserID      = errors.New("models: user not found")
+	ErrUserNotFound       = errors.New("models: user not found")
+	ErrFormNotFound       = errors.New("models: form not found")
 )
 
 const (
@@ -37,7 +40,7 @@ func GetModels(db *sql.DB) Models {
 }
 
 // Should this one insert a lil bit of data (a user, two forms, some submitts)
-func setupTestDB(t *testing.T) (utils.MigrationCtx, Models) {
+func setupTestDB(t *testing.T) Models {
 	ctx, err := utils.NewMigrationCtx(":memory:", ":memory:", "../../migrations")
 	assert.NoError(t, err)
 
@@ -47,10 +50,13 @@ func setupTestDB(t *testing.T) (utils.MigrationCtx, Models) {
 	m := GetModels(ctx.AppDB)
 	_ = insertTestUser(t, m, ValidUserName, ValidUserEmail, ValidUserPassword)
 
-	// ?????
-	//ctx.StateDB.Close()
+	const formFields = `[ {"field_name": "email", "field_type": "string", "contraints": ["unique"]} ]`
+	err = m.Forms.InsertForm(1, "form name", "form description", formFields)
+	assert.NoError(t, err)
 
-	return ctx, m
+	ctx.StateDB.Close()
+
+	return m
 }
 
 func insertTestUser(t *testing.T, m Models, name, email, password string) int {

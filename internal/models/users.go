@@ -49,7 +49,7 @@ func (m *UsersModel) Insert(name, email, password string) error {
 	const query = `
 	INSERT INTO users (name, email, password)
 	VALUES (?, ?, ?)
-	RETURNING id, name, email, created_at, last_updated`
+	RETURNING id, name, email, created_at, updated_at`
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
@@ -58,9 +58,13 @@ func (m *UsersModel) Insert(name, email, password string) error {
 
 	var u userData
 	err = m.db.QueryRow(query, name, email, passwordHash).Scan(&u.ID, &u.Name, &u.Email, &u.CreatedAt, &u.LastUpdated)
-	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
-		return ErrDuplicateEmail
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
+			return ErrDuplicateEmail
+		}
+		return err
 	}
+
 	return nil
 }
 
@@ -132,7 +136,7 @@ func (m *UsersModel) Exists(id int) (bool, error) {
 
 func (m *UsersModel) Get(id int) (User, error) {
 	query := `
-	SELECT name, email, created_at, last_updated, last_login
+	SELECT name, email, created_at, updated_at, last_login
 	FROM users
 	WHERE id = ?
 	`

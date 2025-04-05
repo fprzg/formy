@@ -23,8 +23,8 @@ type Migration struct {
 type MigrationCtx struct {
 	AppDB          *sql.DB
 	StateDB        *sql.DB
-	currentVersion int
-	migrationsDir  string
+	CurrentVersion int
+	MigrationsDir  string
 }
 
 // TODO(Farid): Refactor this function so we can both migrate "up" and "down".
@@ -43,8 +43,8 @@ func NewMigrationCtx(appDBPath, stateDBPath, migrationsDir string) (MigrationCtx
 	ctx := MigrationCtx{
 		AppDB:          appDB,
 		StateDB:        stateDB,
-		currentVersion: currentVersion,
-		migrationsDir:  migrationsDir,
+		CurrentVersion: currentVersion,
+		MigrationsDir:  migrationsDir,
 	}
 
 	return ctx, nil
@@ -56,7 +56,7 @@ func (ctx *MigrationCtx) Close() {
 }
 
 func (ctx *MigrationCtx) Migrate(target int) error {
-	migrations, err := LoadMigrations(ctx.migrationsDir)
+	migrations, err := LoadMigrations(ctx.MigrationsDir)
 	if err != nil {
 		return fmt.Errorf("Failed to load migrations: " + err.Error())
 	}
@@ -65,7 +65,7 @@ func (ctx *MigrationCtx) Migrate(target int) error {
 		target = GetLatestVersion(migrations)
 	}
 
-	err = ApplyMigrations(ctx.AppDB, ctx.StateDB, migrations, ctx.currentVersion, target)
+	err = ApplyMigrations(ctx.AppDB, ctx.StateDB, migrations, ctx.CurrentVersion, target)
 	if err != nil {
 		return fmt.Errorf("Failed to apply migrations: " + err.Error())
 	}

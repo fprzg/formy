@@ -12,6 +12,8 @@ func TestUsersInsert(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
+	m := setupTestDB(t)
+
 	tests := []struct {
 		TestName      string
 		name          string
@@ -58,8 +60,6 @@ func TestUsersInsert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			_, m := setupTestDB(t)
-
 			err := m.Users.Insert(tt.name, tt.email, tt.password)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
@@ -75,6 +75,8 @@ func TestUsersAuthenticate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("models: skipping integration test")
 	}
+
+	m := setupTestDB(t)
 
 	tests := []struct {
 		TestName      string
@@ -122,8 +124,6 @@ func TestUsersAuthenticate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			_, m := setupTestDB(t)
-
 			userID, err := m.Users.Authenticate(tt.email, tt.password)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
@@ -141,39 +141,39 @@ func TestUsersExists(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
+	m := setupTestDB(t)
+
 	tests := []struct {
-		TestName string
-		userID   int
-		want     bool
+		TestName       string
+		userID         int
+		expectedExists bool
 	}{
 		{
-			TestName: "Valid ID",
-			userID:   1,
-			want:     true,
+			TestName:       "Valid ID",
+			userID:         1,
+			expectedExists: true,
 		},
 		{
-			TestName: "Zero ID",
-			userID:   0,
-			want:     false,
+			TestName:       "Zero ID",
+			userID:         0,
+			expectedExists: false,
 		},
 		{
-			TestName: "Negative ID",
-			userID:   -1,
-			want:     false,
+			TestName:       "Negative ID",
+			userID:         -1,
+			expectedExists: false,
 		},
 		{
-			TestName: "Non-existent ID",
-			userID:   999,
-			want:     false,
+			TestName:       "Non-existent ID",
+			userID:         999,
+			expectedExists: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			_, m := setupTestDB(t)
-
 			exists, err := m.Users.Exists(tt.userID)
-			assert.Equal(t, tt.want, exists)
+			assert.Equal(t, tt.expectedExists, exists)
 			assert.NoError(t, err)
 		})
 	}
@@ -184,7 +184,7 @@ func TestUsersGet(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	_, m := setupTestDB(t)
+	m := setupTestDB(t)
 
 	tests := []struct {
 		TestName      string
@@ -236,7 +236,7 @@ func TestUsersUpdateName(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	_, m := setupTestDB(t)
+	m := setupTestDB(t)
 
 	id := insertTestUser(t, m, "Dave", "dave@example.com", "pass")
 
@@ -291,7 +291,7 @@ func TestUsersUpdateEmail(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	_, m := setupTestDB(t)
+	m := setupTestDB(t)
 
 	id := insertTestUser(t, m, "Eve", "eve@old.com", "pass")
 	_ = insertTestUser(t, m, "Other", "used@example.com", "pass")
@@ -346,7 +346,7 @@ func TestUsersUpdatePassword(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	_, m := setupTestDB(t)
+	m := setupTestDB(t)
 
 	id := insertTestUser(t, m, "Frank", "frank@example.com", "oldpass")
 
