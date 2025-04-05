@@ -7,7 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"formme.fprzg.net/internal/controllers"
+	"formy.fprzg.net/internal/controllers"
 
 	_ "github.com/mattn/go-sqlite3"
 )

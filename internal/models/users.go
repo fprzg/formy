@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -17,12 +18,12 @@ type User struct {
 }
 
 type userData struct {
-	id           int
-	passwordHash []byte
-	*User
+	ID           int
+	PasswordHash []byte
+	User
 }
 
-type UserModelInterface interface {
+type UsersModelInterface interface {
 	Insert(name, email, password string) error
 	Authenticate(email, password string) (int, error)
 	Exists(id int) (bool, error)
@@ -32,11 +33,19 @@ type UserModelInterface interface {
 	UpdatePassword(id int, oldPwd, newPwd string) error
 }
 
-type UserModel struct {
+type UsersModel struct {
 	db *sql.DB
 }
 
-func (m *UserModel) Insert(name, email, password string) error {
+func (m *UsersModel) Insert(name, email, password string) error {
+	if name == "" || email == "" || password == "" {
+		return ErrInvalidInput
+	}
+
+	if strings.Index(email, "@") == -1 {
+		return ErrInvalidInput
+	}
+
 	const query = `
 	INSERT INTO users (name, email, password)
 	VALUES (?, ?, ?)
@@ -47,18 +56,20 @@ func (m *UserModel) Insert(name, email, password string) error {
 		return err
 	}
 
-	var u User
-	var id int
-	err = m.db.QueryRow(query, name, email, passwordHash).Scan(&id, &u.Name, &u.Email, &u.CreatedAt, &u.LastUpdated)
-	return err
+	var u userData
+	err = m.db.QueryRow(query, name, email, passwordHash).Scan(&u.ID, &u.Name, &u.Email, &u.CreatedAt, &u.LastUpdated)
+	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
+		return ErrDuplicateEmail
+	}
+	return nil
 }
 
-func (m *UserModel) Authenticate(email, password string) (int, error) {
+func (m *UsersModel) Authenticate(email, password string) (int, error) {
 	const query = `
 	SELECT id, password FROM users WHERE email = ?`
 
 	var u userData
-	err := m.db.QueryRow(query, email).Scan(&u.id, &u.passwordHash)
+	err := m.db.QueryRow(query, email).Scan(&u.ID, &u.PasswordHash)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, ErrInvalidCredentials
@@ -66,7 +77,7 @@ func (m *UserModel) Authenticate(email, password string) (int, error) {
 		return 0, err
 	}
 
-	err = bcrypt.CompareHashAndPassword(u.passwordHash, []byte(password))
+	err = bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return 0, ErrInvalidCredentials
@@ -74,10 +85,10 @@ func (m *UserModel) Authenticate(email, password string) (int, error) {
 		return 0, err
 	}
 
-	return u.id, nil
+	return u.ID, nil
 }
 
-func (m *UserModel) AuthenticateUsingID(id int, password string) error {
+func (m *UsersModel) AuthenticateUsingID(id int, password string) error {
 	const query = `
 	SELECT password FROM users WHERE id = ?
 	`
@@ -102,7 +113,7 @@ func (m *UserModel) AuthenticateUsingID(id int, password string) error {
 	return nil
 }
 
-func (m *UserModel) Exists(id int) (bool, error) {
+func (m *UsersModel) Exists(id int) (bool, error) {
 	const query = `
 	SELECT EXISTS(SELECT true FROM users WHERE id = ?)
 	`
@@ -111,7 +122,7 @@ func (m *UserModel) Exists(id int) (bool, error) {
 	err := m.db.QueryRow(query, id).Scan(&exists)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, ErrInvalidCredentials
+			return false, ErrNoRecord
 		}
 		return false, nil
 	}
@@ -119,7 +130,7 @@ func (m *UserModel) Exists(id int) (bool, error) {
 	return exists, nil
 }
 
-func (m *UserModel) Get(id int) (User, error) {
+func (m *UsersModel) Get(id int) (User, error) {
 	query := `
 	SELECT name, email, created_at, last_updated, last_login
 	FROM users
@@ -130,7 +141,7 @@ func (m *UserModel) Get(id int) (User, error) {
 	err := m.db.QueryRow(query, id).Scan(&u.Name, &u.Email, &u.CreatedAt, &u.LastUpdated, &u.LastLogin)
 	if err == sql.ErrNoRows {
 		if errors.Is(err, sql.ErrNoRows) {
-			return User{}, ErrInvalidCredentials
+			return User{}, ErrNoRecord
 		}
 		return User{}, nil
 	}
@@ -138,7 +149,11 @@ func (m *UserModel) Get(id int) (User, error) {
 	return u, err
 }
 
-func (m *UserModel) UpdateName(id int, name, password string) error {
+func (m *UsersModel) UpdateName(id int, name, password string) error {
+	if name == "" {
+		return ErrInvalidInput
+	}
+
 	const query = `
 	UPDATE users SET name = ? WHERE id = ?
 	`
@@ -153,7 +168,11 @@ func (m *UserModel) UpdateName(id int, name, password string) error {
 	return err
 }
 
-func (m *UserModel) UpdateEmail(id int, email, password string) error {
+func (m *UsersModel) UpdateEmail(id int, email, password string) error {
+	if email == "" || password == "" {
+		return ErrInvalidInput
+	}
+
 	const query = `
 	UPDATE users SET email = ? WHERE id = ?
 	`
@@ -164,11 +183,18 @@ func (m *UserModel) UpdateEmail(id int, email, password string) error {
 	}
 
 	_, err = m.db.Exec(query, email, id)
+	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
+		return ErrDuplicateEmail
+	}
 
 	return err
 }
 
-func (m *UserModel) UpdatePassword(id int, oldPwd, newPwdRaw string) error {
+func (m *UsersModel) UpdatePassword(id int, oldPwd, newPwdRaw string) error {
+	if newPwdRaw == "" {
+		return ErrInvalidInput
+	}
+
 	const query = `
 	UPDATE users SET password = ? WHERE id = ?
 	`

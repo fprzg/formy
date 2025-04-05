@@ -1,127 +1,397 @@
 package models
 
 import (
-	"database/sql"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 )
 
-func setupTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
-	assert.NoError(t, err)
+func TestUsersInsert(t *testing.T) {
+	if testing.Short() {
+		t.Skip("models: skipping integration test")
+	}
 
-	schema := `
-	CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-    last_login DATETIME DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN DEFAULT 0,
-    token_version INTEGER DEFAULT 0
-	);`
+	tests := []struct {
+		TestName      string
+		name          string
+		email         string
+		password      string
+		expectedError error
+	}{
+		{
+			TestName:      "Successful insertion",
+			name:          "Bob",
+			email:         "bob@example.com",
+			password:      "pass123",
+			expectedError: nil,
+		},
+		{
+			TestName:      "Duplicated email",
+			name:          "Alice",
+			email:         ValidUserEmail,
+			password:      "pass123",
+			expectedError: ErrDuplicateEmail,
+		},
+		{
+			TestName:      "Empty name",
+			name:          "",
+			email:         "emptyname@example.com",
+			password:      "pass123",
+			expectedError: ErrInvalidInput,
+		},
+		{
+			TestName:      "Invalid email",
+			name:          "Invalid Email",
+			email:         "not-an-email",
+			password:      "pass123",
+			expectedError: ErrInvalidInput,
+		},
+		{
+			TestName:      "Empty password",
+			name:          "No Password",
+			email:         "nopass@example.com",
+			password:      "",
+			expectedError: ErrInvalidInput,
+		},
+	}
 
-	_, err = db.Exec(schema)
-	assert.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.TestName, func(t *testing.T) {
+			_, m := setupTestDB(t)
 
-	return db
+			err := m.Users.Insert(tt.name, tt.email, tt.password)
+			if tt.expectedError == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.EqualError(t, tt.expectedError, err.Error())
+			}
+		})
+	}
 }
 
-func insertTestUser(t *testing.T, model *UserModel, name, email, password string) int {
-	err := model.Insert(name, email, password)
-	assert.NoError(t, err)
+func TestUsersAuthenticate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("models: skipping integration test")
+	}
 
-	id, err := model.Authenticate(email, password)
-	assert.NoError(t, err)
+	tests := []struct {
+		TestName      string
+		email         string
+		password      string
+		wantID        int
+		expectedError error
+	}{
+		{
+			TestName:      "Successful authentication",
+			email:         ValidUserEmail,
+			password:      ValidUserPassword,
+			wantID:        1,
+			expectedError: nil,
+		},
+		{
+			TestName:      "Wrong email",
+			email:         "bob@example.com",
+			password:      ValidUserPassword,
+			wantID:        0,
+			expectedError: ErrInvalidCredentials,
+		},
+		{
+			TestName:      "Wrong password",
+			email:         ValidUserEmail,
+			password:      "wrongpass",
+			wantID:        0,
+			expectedError: ErrInvalidCredentials,
+		},
+		{
+			TestName:      "Empty email",
+			email:         "",
+			password:      "pass123",
+			wantID:        0,
+			expectedError: ErrInvalidCredentials,
+		},
+		{
+			TestName:      "Empty password",
+			email:         ValidUserEmail,
+			password:      "",
+			wantID:        0,
+			expectedError: ErrInvalidCredentials,
+		},
+	}
 
-	return id
+	for _, tt := range tests {
+		t.Run(tt.TestName, func(t *testing.T) {
+			_, m := setupTestDB(t)
+
+			userID, err := m.Users.Authenticate(tt.email, tt.password)
+			if tt.expectedError == nil {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantID, userID)
+			} else {
+				assert.Error(t, err)
+				assert.EqualError(t, tt.expectedError, err.Error())
+			}
+		})
+	}
 }
 
-func TestInsertAndAuthenticate(t *testing.T) {
-	db := setupTestDB(t)
-	model := &UserModel{db: db}
+func TestUsersExists(t *testing.T) {
+	if testing.Short() {
+		t.Skip("models: skipping integration test")
+	}
 
-	err := model.Insert("Alice", "alice@example.com", "securepass")
-	assert.NoError(t, err)
+	tests := []struct {
+		TestName string
+		userID   int
+		want     bool
+	}{
+		{
+			TestName: "Valid ID",
+			userID:   1,
+			want:     true,
+		},
+		{
+			TestName: "Zero ID",
+			userID:   0,
+			want:     false,
+		},
+		{
+			TestName: "Negative ID",
+			userID:   -1,
+			want:     false,
+		},
+		{
+			TestName: "Non-existent ID",
+			userID:   999,
+			want:     false,
+		},
+	}
 
-	id, err := model.Authenticate("alice@example.com", "securepass")
-	assert.NoError(t, err)
-	assert.NotZero(t, id)
+	for _, tt := range tests {
+		t.Run(tt.TestName, func(t *testing.T) {
+			_, m := setupTestDB(t)
 
-	_, err = model.Authenticate("alice@example.com", "wrongpass")
-	assert.ErrorIs(t, err, ErrInvalidCredentials)
+			exists, err := m.Users.Exists(tt.userID)
+			assert.Equal(t, tt.want, exists)
+			assert.NoError(t, err)
+		})
+	}
 }
 
-func TestExists(t *testing.T) {
-	db := setupTestDB(t)
-	model := &UserModel{db: db}
+func TestUsersGet(t *testing.T) {
+	if testing.Short() {
+		t.Skip("models: skipping integration test")
+	}
 
-	id := insertTestUser(t, model, "Bob", "bob@example.com", "pass123")
+	_, m := setupTestDB(t)
 
-	exists, err := model.Exists(id)
-	assert.NoError(t, err)
-	assert.True(t, exists)
+	tests := []struct {
+		TestName      string
+		id            int
+		name          string
+		email         string
+		expectedError error
+	}{
+		{
+			TestName:      "Valid user ID",
+			id:            1,
+			name:          ValidUserName,
+			email:         ValidUserEmail,
+			expectedError: nil,
+		},
+		{
+			TestName:      "Zero ID",
+			id:            0,
+			expectedError: ErrNoRecord,
+		},
+		{
+			TestName:      "Negative ID",
+			id:            -1,
+			expectedError: ErrNoRecord,
+		},
+		{
+			TestName:      "Non-existent ID",
+			id:            999,
+			expectedError: ErrNoRecord,
+		},
+	}
 
-	exists, err = model.Exists(999)
-	assert.NoError(t, err)
-	assert.False(t, exists)
+	for _, tt := range tests {
+		t.Run(tt.TestName, func(t *testing.T) {
+			user, err := m.Users.Get(tt.id)
+			if tt.expectedError == nil {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.name, user.Name)
+				assert.Equal(t, tt.email, user.Email)
+			} else {
+				assert.EqualError(t, tt.expectedError, err.Error())
+			}
+		})
+	}
 }
 
-func TestGet(t *testing.T) {
-	db := setupTestDB(t)
-	model := &UserModel{db: db}
+func TestUsersUpdateName(t *testing.T) {
+	if testing.Short() {
+		t.Skip("models: skipping integration test")
+	}
 
-	id := insertTestUser(t, model, "Carol", "carol@example.com", "secret")
+	_, m := setupTestDB(t)
 
-	user, err := model.Get(id)
-	assert.NoError(t, err)
-	assert.Equal(t, "Carol", user.Name)
-	assert.Equal(t, "carol@example.com", user.Email)
+	id := insertTestUser(t, m, "Dave", "dave@example.com", "pass")
+
+	tests := []struct {
+		TestName     string
+		newName      string
+		currentPass  string
+		expectError  error
+		expectedName string
+	}{
+		{
+			TestName:     "Successful update",
+			newName:      "Dave Updated",
+			currentPass:  "pass",
+			expectError:  nil,
+			expectedName: "Dave Updated",
+		},
+		{
+			TestName:     "Wrong password",
+			newName:      "Dave WrongPass",
+			currentPass:  "wrong",
+			expectError:  ErrInvalidCredentials,
+			expectedName: "Dave Updated",
+		},
+		{
+			TestName:     "Empty name",
+			newName:      "",
+			currentPass:  "pass",
+			expectError:  ErrInvalidInput,
+			expectedName: "Dave Updated",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.TestName, func(t *testing.T) {
+			err := m.Users.UpdateName(id, tt.newName, tt.currentPass)
+			if tt.expectError == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorIs(t, err, tt.expectError)
+			}
+
+			user, err := m.Users.Get(id)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedName, user.Name)
+		})
+	}
 }
 
-func TestUpdateName(t *testing.T) {
-	db := setupTestDB(t)
-	model := &UserModel{db: db}
+func TestUsersUpdateEmail(t *testing.T) {
+	if testing.Short() {
+		t.Skip("models: skipping integration test")
+	}
 
-	id := insertTestUser(t, model, "Dave", "dave@example.com", "pass")
+	_, m := setupTestDB(t)
 
-	err := model.UpdateName(id, "Dave Updated", "pass")
-	assert.NoError(t, err)
+	id := insertTestUser(t, m, "Eve", "eve@old.com", "pass")
+	_ = insertTestUser(t, m, "Other", "used@example.com", "pass")
 
-	user, err := model.Get(id)
-	assert.NoError(t, err)
-	assert.Equal(t, "Dave Updated", user.Name)
+	tests := []struct {
+		TestName     string
+		newEmail     string
+		currentPass  string
+		expectError  error
+		expectedAuth string
+	}{
+		{
+			TestName:     "Successful update",
+			newEmail:     "eve@new.com",
+			currentPass:  "pass",
+			expectError:  nil,
+			expectedAuth: "eve@new.com",
+		},
+		{
+			TestName:     "Wrong password",
+			newEmail:     "eve@wrongpass.com",
+			currentPass:  "wrong",
+			expectError:  ErrInvalidCredentials,
+			expectedAuth: "eve@new.com",
+		},
+		{
+			TestName:     "Duplicated email",
+			newEmail:     "used@example.com",
+			currentPass:  "pass",
+			expectError:  ErrDuplicateEmail,
+			expectedAuth: "eve@new.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.TestName, func(t *testing.T) {
+			err := m.Users.UpdateEmail(id, tt.newEmail, tt.currentPass)
+			if tt.expectError == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorIs(t, err, tt.expectError)
+			}
+
+			_, err = m.Users.Authenticate(tt.expectedAuth, "pass")
+			assert.NoError(t, err)
+		})
+	}
 }
 
-func TestUpdateEmail(t *testing.T) {
-	db := setupTestDB(t)
-	model := &UserModel{db: db}
+func TestUsersUpdatePassword(t *testing.T) {
+	if testing.Short() {
+		t.Skip("models: skipping integration test")
+	}
 
-	id := insertTestUser(t, model, "Eve", "eve@old.com", "pass")
+	_, m := setupTestDB(t)
 
-	err := model.UpdateEmail(id, "eve@new.com", "pass")
-	assert.NoError(t, err)
+	id := insertTestUser(t, m, "Frank", "frank@example.com", "oldpass")
 
-	_, err = model.Authenticate("eve@new.com", "pass")
-	assert.NoError(t, err)
-}
+	tests := []struct {
+		TestName        string
+		currentPass     string
+		newPass         string
+		expectError     error
+		canLoginWith    string
+		cannotLoginWith string
+	}{
+		{
+			TestName:        "Successful update",
+			currentPass:     "oldpass",
+			newPass:         "newpass",
+			expectError:     nil,
+			canLoginWith:    "newpass",
+			cannotLoginWith: "oldpass",
+		},
+		{
+			TestName:        "Wrong current password",
+			currentPass:     "wrong",
+			newPass:         "another",
+			expectError:     ErrInvalidCredentials,
+			canLoginWith:    "newpass",
+			cannotLoginWith: "another",
+		},
+	}
 
-func TestUpdatePassword(t *testing.T) {
-	db := setupTestDB(t)
-	model := &UserModel{db: db}
+	for _, tt := range tests {
+		t.Run(tt.TestName, func(t *testing.T) {
+			err := m.Users.UpdatePassword(id, tt.currentPass, tt.newPass)
+			if tt.expectError == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorIs(t, err, tt.expectError)
+			}
 
-	id := insertTestUser(t, model, "Frank", "frank@example.com", "oldpass")
+			_, err = m.Users.Authenticate("frank@example.com", tt.canLoginWith)
+			assert.NoError(t, err)
 
-	err := model.UpdatePassword(id, "oldpass", "newpass")
-	assert.NoError(t, err)
-
-	_, err = model.Authenticate("frank@example.com", "oldpass")
-	assert.ErrorIs(t, err, ErrInvalidCredentials)
-
-	_, err = model.Authenticate("frank@example.com", "newpass")
-	assert.NoError(t, err)
+			if tt.cannotLoginWith != "" {
+				_, err = m.Users.Authenticate("frank@example.com", tt.cannotLoginWith)
+				assert.ErrorIs(t, err, ErrInvalidCredentials)
+			}
+		})
+	}
 }
