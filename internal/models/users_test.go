@@ -12,7 +12,8 @@ func TestUsersInsert(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName      string
@@ -60,7 +61,7 @@ func TestUsersInsert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			err := m.Users.Insert(tt.name, tt.email, tt.password)
+			_, err := m.Users.Insert(tt.name, tt.email, tt.password)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -76,7 +77,8 @@ func TestUsersAuthenticate(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName      string
@@ -141,7 +143,8 @@ func TestUsersExists(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName       string
@@ -184,7 +187,8 @@ func TestUsersGet(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName      string
@@ -236,9 +240,11 @@ func TestUsersUpdateName(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
-	id := InsertTestUser(t, m, "Dave", "dave@example.com", "pass")
+	id, err := m.Users.Insert("Dave", "dave@example.com", "pass")
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName     string
@@ -291,10 +297,14 @@ func TestUsersUpdateEmail(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
-	id := InsertTestUser(t, m, "Eve", "eve@old.com", "pass")
-	_ = InsertTestUser(t, m, "Other", "used@example.com", "pass")
+	id, err := m.Users.Insert("Eve", "eve@old.com", "pass")
+	assert.NoError(t, err)
+
+	_, err = m.Users.Insert("Other", "used@example.com", "pass")
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName     string
@@ -358,9 +368,11 @@ func TestUsersUpdatePassword(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
-	id := InsertTestUser(t, m, "Frank", "frank@example.com", "oldpass")
+	id, err := m.Users.Insert("Frank", "frank@example.com", "oldpass")
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName        string

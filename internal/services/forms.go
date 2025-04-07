@@ -1,6 +1,9 @@
 package services
 
 import (
+	"encoding/json"
+	"strconv"
+
 	"formy.fprzg.net/internal/models"
 	"formy.fprzg.net/internal/types"
 )
@@ -17,8 +20,24 @@ type FormsServices struct {
 	fim models.FormInstancesModelInterface
 }
 
-func (s *FormsServices) CreateForm(userID int, form types.JSONMap) error {
-	return nil
+func (s *FormsServices) CreateForm(form types.FormData) (int, error) {
+	// create the form
+	jsonByte, err := json.Marshal(form.Fields)
+	if err != nil {
+		return 0, err
+	}
+
+	json := string(jsonByte)
+	userID, err := strconv.Atoi(form.UserID)
+	if err != nil {
+		return 0, err
+	}
+
+	s.fm.Insert(userID, form.Name, form.Description, json)
+
+	// create the instance
+
+	return 0, nil
 }
 
 /*
@@ -82,11 +101,11 @@ func (s *FormsServices) CreateForm(userID int, form types.JSONMap) error {
 }
 */
 
-func (s *FormsServices) UpdateForm(formID int, formUpdates types.JSONMap) error {
+func (s *FormsServices) UpdateForm(formID int, formUpdates types.FormData) error {
 	return nil
 }
 
-func (s *FormsServices) SubmitForm(formID int, fieldValues types.JSONMap) error {
+func (s *FormsServices) SubmitForm(formID int, fieldValues types.FormData) error {
 	return nil
 }
 

@@ -3,10 +3,8 @@ package models
 import (
 	"database/sql"
 	"errors"
-	"testing"
 
 	"formy.fprzg.net/internal/utils"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -32,22 +30,8 @@ type Models struct {
 	Submissions   SubmissionsModelInterface
 }
 
-func ExecuteSqlStmt(db *sql.DB, stmt string, args ...any) (int64, error) {
-	result, err := db.Exec(stmt, args...)
-	if err != nil {
-		return 0, err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-
-	return rowsAffected, nil
-}
-
-func GetModels(db *sql.DB) Models {
-	return Models{
+func GetModels(db *sql.DB) *Models {
+	return &Models{
 		Users:         &UsersModel{db},
 		Forms:         &FormsModel{db},
 		FormInstances: &FormInstances{db},
@@ -55,31 +39,44 @@ func GetModels(db *sql.DB) Models {
 	}
 }
 
-func SetupTestDB(t *testing.T) Models {
-	ctx, err := utils.NewMigrationCtx(":memory:", ":memory:", "../../migrations")
-	assert.NoError(t, err)
+// maybe we want to know the IDs of the user, form, form instance, submissions, etc
+func GetTestModels() (*Models, error) {
+	db, err := utils.SetupTestDB()
+	if err != nil {
+		panic(err)
+	}
 
-	err = ctx.Migrate(-1)
-	assert.NoError(t, err)
+	m := GetModels(db)
 
-	m := GetModels(ctx.AppDB)
-	_ = InsertTestUser(t, m, ValidUserName, ValidUserEmail, ValidUserPassword)
+	userID, err := InsertTestUser(m)
+	if err != nil {
+		return nil, err
+	}
 
-	const formFields = `[ {"field_name": "email", "field_type": "string", "contraints": ["unique"]} ]`
-	err = m.Forms.Insert(1, "form name", "form description", formFields)
-	assert.NoError(t, err)
+	_, err = InsertTestForm(m, userID)
+	//formID, err := InsertTestForm(m, userID)
+	if err != nil {
+		return nil, err
+	}
 
-	ctx.StateDB.Close()
-
-	return m
+	return m, nil
 }
 
-func InsertTestUser(t *testing.T, m Models, name, email, password string) int {
-	err := m.Users.Insert(name, email, password)
-	assert.NoError(t, err)
+func InsertTestUser(m *Models) (int, error) {
+	userID, err := m.Users.Insert(ValidUserName, ValidUserEmail, ValidUserPassword)
+	if err != nil {
+		return 0, err
+	}
 
-	id, err := m.Users.Authenticate(email, password)
-	assert.NoError(t, err)
+	_, err = m.Users.Authenticate(ValidUserEmail, ValidUserPassword)
+	if err != nil {
+		return 0, err
+	}
 
-	return id
+	return userID, nil
+}
+
+func InsertTestForm(m *Models, userID int) (int, error) {
+	formID, err := m.Forms.Insert(userID, "form name", "form description", `[ {"field_name": "email", "field_type": "string", "field_contraints": ["unique"]} ]`)
+	return formID, err
 }

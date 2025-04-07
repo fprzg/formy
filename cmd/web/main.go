@@ -5,51 +5,45 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/labstack/echo/v4"
-
 	"formy.fprzg.net/internal/controllers"
+	"formy.fprzg.net/internal/models"
+	"formy.fprzg.net/internal/types"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type App struct {
-	db *sql.DB
-	e  *echo.Echo
-}
-
-type Config struct {
-	port  string
-	dbDir string
-	env   string
-}
-
 var (
-	app = App{}
-	cfg = Config{}
+	cfg = types.AppConfig{}
 )
 
 func main() {
-	flag.StringVar(&cfg.port, "port", ":3000", "API server port.")
-	flag.StringVar(&cfg.dbDir, "dbDir", "./app.db", "Database directory.")
-	flag.StringVar(&cfg.env, "env", "development", "Environment (development | staging | production)")
+	flag.StringVar(&cfg.Port, "port", ":3000", "API server port.")
+	flag.StringVar(&cfg.DBDir, "dbDir", "./app.db", "Database directory.")
+	flag.StringVar(&cfg.Env, "env", "development", "Environment (development | staging | production)")
 	flag.Parse()
 
-	if cfg.env != "development" && cfg.env != "staging" && cfg.env != "production" {
-		panic(fmt.Errorf("invalid environment: '%s'", cfg.env))
+	if cfg.Env != "development" && cfg.Env != "staging" && cfg.Env != "production" {
+		panic(fmt.Errorf("invalid environment: '%s'", cfg.Env))
 	}
 
-	db, err := sql.Open("sqlite3", cfg.dbDir)
-	if err != nil {
-		panic(err)
+	var m *models.Models
+	var err error
+
+	if cfg.Env == "development" {
+		m, err = models.GetTestModels()
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		db, err := sql.Open("sqlite3", cfg.DBDir)
+		if err != nil {
+			panic(err)
+		}
+
+		m = models.GetModels(db)
 	}
-	defer db.Close()
 
-	e := controllers.GetRouter(cfg.env)
+	c := controllers.GetControllers(m)
 
-	app = App{
-		db: db,
-		e:  e,
-	}
-
-	app.e.Logger.Fatal(e.Start(cfg.port))
+	c.Start(cfg)
 }

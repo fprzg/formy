@@ -7,15 +7,15 @@ import (
 )
 
 type ModelServices struct {
-	FormsServices FormsServices
+	FormsServices *FormsServices
 }
 
 var (
 	ErrInvalidInput = errors.New("service: Invalid input")
 )
 
-func GetModelServices(m models.Models) ModelServices {
-	return ModelServices{
-		FormsServices: FormsServices{fm: m.Forms, fim: m.FormInstances},
+func GetModelServices(m *models.Models) *ModelServices {
+	return &ModelServices{
+		FormsServices: &FormsServices{fm: m.Forms, fim: m.FormInstances},
 	}
 }

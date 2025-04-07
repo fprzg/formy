@@ -20,7 +20,8 @@ func TestFormsInsert(t *testing.T) {
 	]
 	`
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName      string
@@ -62,7 +63,7 @@ func TestFormsInsert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			err := m.Forms.Insert(tt.userID, tt.name, tt.description, tt.fields)
+			_, err := m.Forms.Insert(tt.userID, tt.name, tt.description, tt.fields)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -77,7 +78,8 @@ func TestFormsGet(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName      string
@@ -114,7 +116,8 @@ func TestFormsGetFormsByUserID(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName      string
@@ -151,7 +154,8 @@ func TestFormsUpdateName(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName      string
@@ -191,7 +195,8 @@ func TestFormsUpdateDescription(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName       string
@@ -231,7 +236,8 @@ func TestFormsUpdateDeleteForm(t *testing.T) {
 		t.Skip("models: skipping integration test")
 	}
 
-	m := SetupTestDB(t)
+	m, err := GetTestModels()
+	assert.NoError(t, err)
 
 	tests := []struct {
 		TestName      string

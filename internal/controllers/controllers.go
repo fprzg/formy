@@ -4,111 +4,121 @@ import (
 	"fmt"
 	"net/http"
 
+	"formy.fprzg.net/internal/models"
+	"formy.fprzg.net/internal/services"
 	"formy.fprzg.net/internal/types"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-type Form struct {
-	ID      string `json:"id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
+type Controllers struct {
+	m *models.Models
+	s *services.ModelServices
+	e *echo.Echo
 }
 
-type User struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
+func GetControllers(m *models.Models) Controllers {
+	c := Controllers{
+		e: echo.New(),
+		m: m,
+		s: services.GetModelServices(m),
+	}
+
+	c.e.Use(middleware.Logger())
+	c.e.Use(middleware.Recover())
+
+	c.apiRoutes(c.e)
+	c.frontendRoutes(c.e)
+	c.uiRoutes(c.e)
+
+	return c
 }
 
-func GetRouter(env string) *echo.Echo {
-	e := echo.New()
-
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
-	//
-	// API ROUTES
-	//
-	e.GET("/api/ping", pingHandle)
-
-	e.POST("/api/user/register", userRegisterHandle)
-	e.PUT("/api/user/update", userUpdateHandle)
-
-	e.POST("/api/form/create", formCreateHandle)
-	e.PUT("/api/form/modify", formModifyHandle)
-
-	e.POST("/api/submit/:id", submitHandle)
-
-	//
-	// FRONTEND ROUTES
-	//
-	e.GET("/", dummyFormHandler)
-
-	//
-	// HTMX
-	//
-	//e.GET("/ui/user/:id", uiUsersGethandler)
-	//e.GET("/ui/form/:id", uiFormsGethandler)
-
-	return e
+func (c *Controllers) Start(cfg types.AppConfig) error {
+	return c.e.Start(cfg.Port)
 }
 
-func pingHandle(c echo.Context) error {
-	return c.JSON(http.StatusOK, echo.Map{
+func (c *Controllers) pingHandle(ctx echo.Context) error {
+	return ctx.JSON(http.StatusOK, echo.Map{
 		"status": "working",
 	})
 }
 
-func userRegisterHandle(c echo.Context) error {
-	user := new(User)
-	if err := c.Bind(user); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid user data",
+func (c *Controllers) apiRoutes(e *echo.Echo) {
+	g := e.Group("/api")
+
+	g.POST("/user/register", c.userRegisterHandle)
+	g.PUT("/user/update", c.userUpdateHandle)
+
+	g.POST("/form/create", c.formCreateHandle)
+	g.PUT("/form/modify", c.formModifyHandle)
+
+	g.POST("/submit/:id", c.submitHandle)
+}
+
+func (c *Controllers) frontendRoutes(e *echo.Echo) {
+	g := e.Group("/")
+
+	g.GET("/", c.dummyFormHandler)
+	g.GET("/ping", c.pingHandle)
+}
+
+func (c *Controllers) uiRoutes(e *echo.Echo) {
+	_ = e.Group("/ui")
+
+	//e.GET("/user/:id", uiUsersGethandler)
+	//e.GET("/form/:id", uiFormsGethandler)
+
+}
+
+//
+//
+// HANDLES
+//
+//
+
+func (c *Controllers) userRegisterHandle(ctx echo.Context) error {
+	/*
+		user := new(User)
+		if err := c.Bind(user); err != nil {
+			return c.JSON(http.StatusBadRequest, echo.Map{
+				"error": "Invalid user data",
+			})
+		}
+
+		return c.JSON(http.StatusCreated, echo.Map{
+			"message": "User registered successfully",
+			"user":    user,
 		})
-	}
-
-	return c.JSON(http.StatusCreated, echo.Map{
-		"message": "User registered successfully",
-		"user":    user,
-	})
+	*/
+	return nil
 }
 
-func userUpdateHandle(c echo.Context) error {
-	user := new(User)
-	if err := c.Bind(user); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid user data",
+func (c *Controllers) userUpdateHandle(ctx echo.Context) error {
+	/*
+		user := new(User)
+		if err := c.Bind(user); err != nil {
+			return c.JSON(http.StatusBadRequest, echo.Map{
+				"error": "Invalid user data",
+			})
+		}
+
+		return c.JSON(http.StatusOK, echo.Map{
+			"message": "User updated successfully",
+			"user":    user,
 		})
-	}
-
-	return c.JSON(http.StatusOK, echo.Map{
-		"message": "User updated successfully",
-		"user":    user,
-	})
+	*/
+	return nil
 }
 
-type Field struct {
-	Name        string
-	Type        string
-	Constraints string
-}
-
-type FormData struct {
-	UserID      string
-	Name        string
-	Description string
-	Fields      []Field
-}
-
-func formCreateHandle(c echo.Context) error {
-	r := c.Request()
+func (c *Controllers) formCreateHandle(ctx echo.Context) error {
+	r := ctx.Request()
 
 	if err := r.ParseForm(); err != nil {
-		c.HTML(http.StatusBadRequest, err.Error())
+		ctx.String(http.StatusBadRequest, err.Error())
 	}
 
-	data := FormData{
+	formData := types.FormData{
 		UserID:      r.FormValue("user_id"),
 		Name:        r.FormValue("name"),
 		Description: r.FormValue("description"),
@@ -119,100 +129,67 @@ func formCreateHandle(c echo.Context) error {
 	fieldConstraints := r.Form["field_constraints"]
 
 	if len(fieldNames) == 0 || len(fieldNames) != len(fieldTypes) || len(fieldNames) != len(fieldConstraints) {
-		c.HTML(http.StatusBadRequest, "Invalid fields data")
+		ctx.String(http.StatusBadRequest, "Invalid fields data")
 		return nil
 	}
 
 	for i := range fieldNames {
-		data.Fields = append(data.Fields, Field{
+		formData.Fields = append(formData.Fields, types.FieldData{
 			Name:        fieldNames[i],
 			Type:        fieldTypes[i],
 			Constraints: fieldConstraints[i],
 		})
 	}
 
-	c.HTML(http.StatusOK, fmt.Sprintf("%v", data))
+	formID, err := c.s.FormsServices.CreateForm(formData)
+	if err != nil {
+		return err
+	}
+
+	ctx.String(http.StatusOK,
+		fmt.Sprintf(`{
+		"status": "OK",
+		"form_id":  "%d"
+		}`, formID),
+	)
 
 	return nil
 }
 
-func formModifyHandle(c echo.Context) error {
-	form := new(Form)
-	if err := c.Bind(form); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid form data",
-		})
-	}
+func (c *Controllers) formModifyHandle(ctx echo.Context) error {
+	/*
+		form := new(Form)
+		if err := c.Bind(form); err != nil {
+			return c.JSON(http.StatusBadRequest, echo.Map{
+				"error": "Invalid form data",
+			})
+		}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"message": "Form modified successfully",
-		"form":    form,
-	})
+		return c.JSON(http.StatusOK, echo.Map{
+			"message": "Form modified successfully",
+			"form":    form,
+		})
+	*/
+	return nil
 }
 
-func submitHandle(c echo.Context) error {
-	formValues, err := types.JSONMapFromRequest(c.Request())
+func (c *Controllers) submitHandle(ctx echo.Context) error {
+	formValues, err := types.JSONMapFromRequest(ctx.Request())
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return ctx.JSON(http.StatusBadRequest, echo.Map{
 			"error": "Failed to parse form data",
 		})
 	}
 
-	/*
-		// Get form type to determine how to process it
-		formType, ok := formValues["form_type"].(string)
-		if !ok {
-			return c.JSON(http.StatusBadRequest, echo.Map{
-				"error": "Form type is required",
-			})
-		}
-
-			// Process based on form type
-			switch formType {
-			case "contact":
-				// Validate contact form fields
-				if _, ok := formValues["name"]; !ok {
-					return c.JSON(http.StatusBadRequest, echo.Map{
-						"error": "Name is required for contact form",
-					})
-				}
-				if _, ok := formValues["email"]; !ok {
-					return c.JSON(http.StatusBadRequest, echo.Map{
-						"error": "Email is required for contact form",
-					})
-				}
-				// Add more contact-specific validation/processing here
-
-			case "feedback":
-				// Validate feedback form fields
-				if _, ok := formValues["rating"]; !ok {
-					return c.JSON(http.StatusBadRequest, echo.Map{
-						"error": "Rating is required for feedback form",
-					})
-				}
-				if _, ok := formValues["comment"]; !ok {
-					return c.JSON(http.StatusBadRequest, echo.Map{
-						"error": "Comment is required for feedback form",
-					})
-				}
-				// Add more feedback-specific validation/processing here
-
-			default:
-				return c.JSON(http.StatusBadRequest, echo.Map{
-					"error": "Unknown form type",
-				})
-			}
-	*/
-
 	// Return success response
-	return c.JSON(http.StatusOK, echo.Map{
+	return ctx.JSON(http.StatusOK, echo.Map{
 		"message": "success",
 		//"form_type": formType,
 		"data": formValues,
 	})
 }
 
-func dummyFormHandler(c echo.Context) error {
+func (c *Controllers) dummyFormHandler(ctx echo.Context) error {
 	html := `
 	<!DOCTYPE html>
 	<html>
@@ -238,5 +215,5 @@ func dummyFormHandler(c echo.Context) error {
 	</body>
 	</html>`
 
-	return c.HTML(http.StatusOK, html)
+	return ctx.HTML(http.StatusOK, html)
 }

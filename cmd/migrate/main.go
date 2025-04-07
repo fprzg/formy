@@ -39,16 +39,24 @@ func main() {
 		return
 	}
 
-	// Apply migrations files option
-	ctx, err := utils.NewMigrationCtx(cfg.DBPath, "./migration_state.db", cfg.MigrationsDir)
+	_, err := utils.SetupDB(cfg.DBPath)
 	if err != nil {
 		log.Fatal("" + err.Error())
 	}
 
-	err = ctx.Migrate(cfg.TargetVersion)
-	if err != nil {
-		log.Fatalf("" + err.Error())
-	}
+	/*
+		// Apply migrations files option
+		ctx, err := utils.NewMigrationCtx(cfg.DBPath, "./migration_state.db", cfg.MigrationsDir)
+		if err != nil {
+			log.Fatal("" + err.Error())
+		}
 
-	ctx.Close()
+		err = ctx.Migrate(cfg.TargetVersion)
+		if err != nil {
+			log.Fatalf("" + err.Error())
+		}
+
+		ctx.Close()
+	*/
+
 }

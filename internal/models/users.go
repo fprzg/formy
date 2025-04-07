@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"formy.fprzg.net/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -24,7 +25,7 @@ type userData struct {
 }
 
 type UsersModelInterface interface {
-	Insert(name, email, password string) error
+	Insert(name, email, password string) (int, error)
 	Authenticate(email, password string) (int, error)
 	Exists(id int) (bool, error)
 	Get(id int) (User, error)
@@ -37,13 +38,13 @@ type UsersModel struct {
 	db *sql.DB
 }
 
-func (m *UsersModel) Insert(name, email, password string) error {
+func (m *UsersModel) Insert(name, email, password string) (int, error) {
 	if name == "" || email == "" || password == "" {
-		return ErrInvalidInput
+		return 0, ErrInvalidInput
 	}
 
 	if !strings.Contains(email, "@") {
-		return ErrInvalidInput
+		return 0, ErrInvalidInput
 	}
 
 	const query = `
@@ -53,19 +54,19 @@ func (m *UsersModel) Insert(name, email, password string) error {
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	var u userData
 	err = m.db.QueryRow(query, name, email, passwordHash).Scan(&u.ID, &u.Name, &u.Email, &u.CreatedAt, &u.LastUpdated)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
-			return ErrDuplicateEmail
+			return 0, ErrDuplicateEmail
 		}
-		return err
+		return 0, err
 	}
 
-	return nil
+	return u.ID, nil
 }
 
 func (m *UsersModel) Authenticate(email, password string) (int, error) {
@@ -167,7 +168,7 @@ func (m *UsersModel) UpdateName(id int, name, password string) error {
 		return err
 	}
 
-	rows, err := ExecuteSqlStmt(m.db, stmt, name, id)
+	rows, err := utils.ExecuteSqlStmt(m.db, stmt, name, id)
 	if rows == 0 {
 		return ErrUserNotFound
 	}
@@ -189,7 +190,7 @@ func (m *UsersModel) UpdateEmail(id int, email, password string) error {
 		return err
 	}
 
-	rows, err := ExecuteSqlStmt(m.db, query, email, id)
+	rows, err := utils.ExecuteSqlStmt(m.db, query, email, id)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
 			return ErrDuplicateEmail
@@ -223,7 +224,7 @@ func (m *UsersModel) UpdatePassword(id int, oldPwd, newPwdRaw string) error {
 		return err
 	}
 
-	rows, err := ExecuteSqlStmt(m.db, query, string(newPwd), id)
+	rows, err := utils.ExecuteSqlStmt(m.db, query, string(newPwd), id)
 	if rows == 0 {
 		return ErrUserNotFound
 	}
