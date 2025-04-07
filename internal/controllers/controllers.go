@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"formy.fprzg.net/internal/types"
@@ -87,18 +88,52 @@ func userUpdateHandle(c echo.Context) error {
 	})
 }
 
+type Field struct {
+	Name        string
+	Type        string
+	Constraints string
+}
+
+type FormData struct {
+	UserID      string
+	Name        string
+	Description string
+	Fields      []Field
+}
+
 func formCreateHandle(c echo.Context) error {
-	form := new(Form)
-	if err := c.Bind(form); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid form data",
+	r := c.Request()
+
+	if err := r.ParseForm(); err != nil {
+		c.HTML(http.StatusBadRequest, err.Error())
+	}
+
+	data := FormData{
+		UserID:      r.FormValue("user_id"),
+		Name:        r.FormValue("name"),
+		Description: r.FormValue("description"),
+	}
+
+	fieldNames := r.Form["field_name"]
+	fieldTypes := r.Form["field_type"]
+	fieldConstraints := r.Form["field_constraints"]
+
+	if len(fieldNames) == 0 || len(fieldNames) != len(fieldTypes) || len(fieldNames) != len(fieldConstraints) {
+		c.HTML(http.StatusBadRequest, "Invalid fields data")
+		return nil
+	}
+
+	for i := range fieldNames {
+		data.Fields = append(data.Fields, Field{
+			Name:        fieldNames[i],
+			Type:        fieldTypes[i],
+			Constraints: fieldConstraints[i],
 		})
 	}
 
-	return c.JSON(http.StatusCreated, echo.Map{
-		"message": "Form created successfully",
-		"form":    form,
-	})
+	c.HTML(http.StatusOK, fmt.Sprintf("%v", data))
+
+	return nil
 }
 
 func formModifyHandle(c echo.Context) error {
