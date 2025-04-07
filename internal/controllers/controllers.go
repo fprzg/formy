@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 
+	"formy.fprzg.net/internal/types"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -115,21 +116,11 @@ func formModifyHandle(c echo.Context) error {
 }
 
 func submitHandle(c echo.Context) error {
-	formValues := make(map[string]interface{})
-	if err := c.Request().ParseForm(); err != nil {
+	formValues, err := types.JSONMapFromRequest(c.Request())
+	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"error": "Failed to parse form data",
 		})
-	}
-
-	// Populate form values
-	for key, values := range c.Request().PostForm {
-		// If single value, store it directly; if multiple, store as slice
-		if len(values) == 1 {
-			formValues[key] = values[0]
-		} else {
-			formValues[key] = values
-		}
 	}
 
 	/*

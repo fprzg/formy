@@ -14,10 +14,12 @@ type Form struct {
 	FormVersion  int    `json:"form_version"`
 }
 
+/*
 type formData struct {
 	UserID int `json:"user_id"`
 	Form
 }
+*/
 
 type FormInstance struct {
 	ID          int    `json:"id"`
@@ -28,19 +30,19 @@ type FormInstance struct {
 }
 
 type FormsModelInterface interface {
-	InsertForm(userID int, name, description, fields string) error
-	GetForm(formID int) (Form, error)
-	GetFormsByUser(userID int) ([]Form, error)
-	UpdateFormName(formID int, name string) error
-	UpdateFormDescription(formID int, description string) error
+	Insert(userID int, name, description, fields string) error
+	Get(formID int) (Form, error)
+	GetFormsByUserID(userID int) ([]Form, error)
+	UpdateName(formID int, name string) error
+	UpdateDescription(formID int, description string) error
 	DeleteForm(formID int) error
 }
 
 type FormsModel struct {
-	DB *sql.DB
+	db *sql.DB
 }
 
-func (m *FormsModel) InsertForm(userID int, name, description, fields string) error {
+func (m *FormsModel) Insert(userID int, name, description, fields string) error {
 	if userID < 1 {
 		return ErrInvalidUserID
 	}
@@ -54,7 +56,7 @@ func (m *FormsModel) InsertForm(userID int, name, description, fields string) er
     `
 
 	var f Form
-	err := m.DB.QueryRow(queryForm, userID, name, description).Scan(&f.ID, &f.CreatedAt, &f.LastModified, &f.FormVersion)
+	err := m.db.QueryRow(queryForm, userID, name, description).Scan(&f.ID, &f.CreatedAt, &f.LastModified, &f.FormVersion)
 	if err != nil {
 		if strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
 			return ErrInvalidUserID
@@ -69,12 +71,12 @@ func (m *FormsModel) InsertForm(userID int, name, description, fields string) er
 	`
 
 	var fi FormInstance
-	err = m.DB.QueryRow(queryFormInstance, f.ID, fields, f.FormVersion).Scan(&fi.ID, &fi.CreatedAt)
+	err = m.db.QueryRow(queryFormInstance, f.ID, fields, f.FormVersion).Scan(&fi.ID, &fi.CreatedAt)
 
 	return err
 }
 
-func (m *FormsModel) GetForm(formID int) (Form, error) {
+func (m *FormsModel) Get(formID int) (Form, error) {
 	//SELECT id, user_id, name, description, created_at, last_modified
 	const query = `
         SELECT id, name, description, created_at, updated_at
@@ -83,7 +85,7 @@ func (m *FormsModel) GetForm(formID int) (Form, error) {
     `
 
 	var f Form
-	err := m.DB.QueryRow(query, formID).Scan(&f.ID, &f.Name, &f.Description, &f.CreatedAt, &f.LastModified)
+	err := m.db.QueryRow(query, formID).Scan(&f.ID, &f.Name, &f.Description, &f.CreatedAt, &f.LastModified)
 	if err == sql.ErrNoRows {
 		return Form{}, ErrFormNotFound
 	}
@@ -91,14 +93,14 @@ func (m *FormsModel) GetForm(formID int) (Form, error) {
 	return f, err
 }
 
-func (m *FormsModel) GetFormsByUser(userID int) ([]Form, error) {
+func (m *FormsModel) GetFormsByUserID(userID int) ([]Form, error) {
 	const query = `
     SELECT id, name, description, created_at, updated_at
 	FROM forms
 	WHERE user_id = ?
 	`
 
-	rows, err := m.DB.Query(query, userID)
+	rows, err := m.db.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,14 +124,14 @@ func (m *FormsModel) GetFormsByUser(userID int) ([]Form, error) {
 	return forms, nil
 }
 
-func (m *FormsModel) UpdateFormName(formID int, name string) error {
+func (m *FormsModel) UpdateName(formID int, name string) error {
 	const stmt = `
 	UPDATE forms
 	SET name = ?, updated_at = CURRENT_TIMESTAMP
 	WHERE id = ?
 	`
 
-	rows, err := ExecuteSqlStmt(m.DB, stmt, name, formID)
+	rows, err := ExecuteSqlStmt(m.db, stmt, name, formID)
 	if rows == 0 {
 		return ErrFormNotFound
 	}
@@ -137,14 +139,14 @@ func (m *FormsModel) UpdateFormName(formID int, name string) error {
 	return err
 }
 
-func (m *FormsModel) UpdateFormDescription(formID int, description string) error {
+func (m *FormsModel) UpdateDescription(formID int, description string) error {
 	const query = `
 	UPDATE forms
 	SET description = ?, updated_at = CURRENT_TIMESTAMP
 	WHERE id = ?
 	`
 
-	rows, err := ExecuteSqlStmt(m.DB, query, description, formID)
+	rows, err := ExecuteSqlStmt(m.db, query, description, formID)
 	if rows == 0 {
 		return ErrFormNotFound
 	}
@@ -157,7 +159,7 @@ func (m *FormsModel) DeleteForm(formID int) error {
 	DELETE FROM forms WHERE id = ?
 	`
 
-	rows, err := ExecuteSqlStmt(m.DB, stmt, formID)
+	rows, err := ExecuteSqlStmt(m.db, stmt, formID)
 	if rows == 0 {
 		return ErrFormNotFound
 	}

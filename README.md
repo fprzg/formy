@@ -13,3 +13,4 @@
 - [ ] Testing suite for checking performance.
 - [ ] Upload the client-side javascript scripts to a cdn?? (Cloudflare cache may be enough tho).
 - [ ] Support database backups and security/integrity checks.
+- [ ] Testing suite.

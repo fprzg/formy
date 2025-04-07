@@ -26,9 +26,10 @@ const (
 )
 
 type Models struct {
-	Users       UsersModelInterface
-	Forms       FormsModelInterface
-	Submissions SubmissionsModelInterface
+	Users         UsersModelInterface
+	Forms         FormsModelInterface
+	FormInstances FormInstancesModelInterface
+	Submissions   SubmissionsModelInterface
 }
 
 func ExecuteSqlStmt(db *sql.DB, stmt string, args ...any) (int64, error) {
@@ -47,9 +48,10 @@ func ExecuteSqlStmt(db *sql.DB, stmt string, args ...any) (int64, error) {
 
 func GetModels(db *sql.DB) Models {
 	return Models{
-		Users:       &UsersModel{db},
-		Forms:       &FormsModel{db},
-		Submissions: &SubmissionsModel{db},
+		Users:         &UsersModel{db},
+		Forms:         &FormsModel{db},
+		FormInstances: &FormInstances{db},
+		Submissions:   &SubmissionsModel{db},
 	}
 }
 
@@ -64,7 +66,7 @@ func SetupTestDB(t *testing.T) Models {
 	_ = InsertTestUser(t, m, ValidUserName, ValidUserEmail, ValidUserPassword)
 
 	const formFields = `[ {"field_name": "email", "field_type": "string", "contraints": ["unique"]} ]`
-	err = m.Forms.InsertForm(1, "form name", "form description", formFields)
+	err = m.Forms.Insert(1, "form name", "form description", formFields)
 	assert.NoError(t, err)
 
 	ctx.StateDB.Close()

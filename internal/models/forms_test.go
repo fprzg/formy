@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFormsInsertForm(t *testing.T) {
+func TestFormsInsert(t *testing.T) {
 	if testing.Short() {
 		t.Skip("models: skipping integration test.")
 	}
@@ -62,7 +62,7 @@ func TestFormsInsertForm(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			err := m.Forms.InsertForm(tt.userID, tt.name, tt.description, tt.fields)
+			err := m.Forms.Insert(tt.userID, tt.name, tt.description, tt.fields)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -72,7 +72,7 @@ func TestFormsInsertForm(t *testing.T) {
 	}
 }
 
-func TestFormsGetForm(t *testing.T) {
+func TestFormsGet(t *testing.T) {
 	if testing.Short() {
 		t.Skip("models: skipping integration test")
 	}
@@ -98,7 +98,7 @@ func TestFormsGetForm(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			_, err := m.Forms.GetForm(tt.formID)
+			_, err := m.Forms.Get(tt.formID)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -109,7 +109,7 @@ func TestFormsGetForm(t *testing.T) {
 	}
 }
 
-func TestFormsGetFormsByUser(t *testing.T) {
+func TestFormsGetFormsByUserID(t *testing.T) {
 	if testing.Short() {
 		t.Skip("models: skipping integration test")
 	}
@@ -135,7 +135,7 @@ func TestFormsGetFormsByUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			_, err := m.Forms.GetFormsByUser(tt.userID)
+			_, err := m.Forms.GetFormsByUserID(tt.userID)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -146,7 +146,7 @@ func TestFormsGetFormsByUser(t *testing.T) {
 	}
 }
 
-func TestFormsUpdateFormName(t *testing.T) {
+func TestFormsUpdateName(t *testing.T) {
 	if testing.Short() {
 		t.Skip("models: skipping integration test")
 	}
@@ -175,7 +175,7 @@ func TestFormsUpdateFormName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			err := m.Forms.UpdateFormName(tt.formID, tt.newName)
+			err := m.Forms.UpdateName(tt.formID, tt.newName)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -186,7 +186,7 @@ func TestFormsUpdateFormName(t *testing.T) {
 	}
 }
 
-func TestFormsUpdateFormDescription(t *testing.T) {
+func TestFormsUpdateDescription(t *testing.T) {
 	if testing.Short() {
 		t.Skip("models: skipping integration test")
 	}
@@ -215,7 +215,7 @@ func TestFormsUpdateFormDescription(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			err := m.Forms.UpdateFormDescription(tt.formID, tt.newDescription)
+			err := m.Forms.UpdateDescription(tt.formID, tt.newDescription)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -226,7 +226,7 @@ func TestFormsUpdateFormDescription(t *testing.T) {
 	}
 }
 
-func TestFormsUpdateFormDeleteForm(t *testing.T) {
+func TestFormsUpdateDeleteForm(t *testing.T) {
 	if testing.Short() {
 		t.Skip("models: skipping integration test")
 	}

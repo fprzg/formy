@@ -19,10 +19,23 @@ func TestFormServiceCreateForm(t *testing.T) {
 		"name": "Basic Contact Form",
 		"description": "Clients will use this form to contact us.",
 		"fields": [
-			{ "field_name": "name", "field_type": "string", "constraints": ["required"] },
-			{ "field_name": "email", "field_type": "string", "constraints": ["unique", "required"] },
-			{ "field_name": "phone_number", "field_type": "string", "constraints": ["required"] },
-			{ "field_name": "message", "field_type": "string", "constraints": [] }
+			{
+				"field_name": "name",
+				"field_type": "string",
+				"field_constraints": [{ "constraint_name": "required"}] },
+			{
+				"field_name": "email",
+				"field_type": "string",
+				"field_constraints": [{"constraint_name": "unique"}, {"constraint_name": "required"}] },
+			{
+				"field_name": "phone_number",
+				"field_type": "string",
+				"field_constraints": [{ "constraint_name": "required"}] },
+			{
+				"field_name": "message",
+				"field_type": "string",
+				"field_constraints": []
+			}
 		]
 	}
 	`)
@@ -31,9 +44,8 @@ func TestFormServiceCreateForm(t *testing.T) {
 		log.Fatal(err.Error())
 	}
 
-	//s := FormService{db: nil}
 	m := models.SetupTestDB(t)
-	s := FormService{m.Forms}
+	ms := GetModelServices(m)
 
 	tests := []struct {
 		TestName      string
@@ -51,7 +63,7 @@ func TestFormServiceCreateForm(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			err = s.CreateForm(tt.userID, tt.form)
+			err = ms.FormsServices.CreateForm(tt.userID, tt.form)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
 			} else {
@@ -60,3 +72,12 @@ func TestFormServiceCreateForm(t *testing.T) {
 		})
 	}
 }
+
+
+func submitHandle(c echo.Context) error {
+	formValues := make(map[string]interface{})
+	if err := c.Request().ParseForm(); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"error": "Failed to parse form data",
+		})
+	}
