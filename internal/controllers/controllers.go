@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"formy.fprzg.net/internal/models"
 	"formy.fprzg.net/internal/services"
@@ -141,16 +142,25 @@ func (c *Controllers) formCreateHandle(ctx echo.Context) error {
 		})
 	}
 
-	formID, err := c.s.FormsServices.CreateForm(formData)
+	userID, err := strconv.Atoi(formData.UserID)
 	if err != nil {
+		ctx.String(http.StatusBadRequest,
+			fmt.Sprintf(`{ "status": "error", "message":  "%s" }`, err.Error()),
+		)
+		return err
+	}
+
+	formID, err := c.m.Forms.Insert(userID, formData.Name, formData.Description, formData.Fields)
+	//formID, err := c.s.FormsServices.CreateForm(formData)
+	if err != nil {
+		ctx.String(http.StatusBadRequest,
+			fmt.Sprintf(`{ "status": "error", "message":  "%s" }`, err.Error()),
+		)
 		return err
 	}
 
 	ctx.String(http.StatusOK,
-		fmt.Sprintf(`{
-		"status": "OK",
-		"form_id":  "%d"
-		}`, formID),
+		fmt.Sprintf(`{ "status": "OK", "form_id":  "%d" }`, formID),
 	)
 
 	return nil

@@ -1,7 +1,7 @@
 #! /bin/bash
 
 curl -X POST http://localhost:3000/api/form/create \
-  -d "user_id=123" \
+  -d "user_id=1" \
   -d "name=Juan Pérez" \
   -d "description=Perfil de ejemplo" \
   -d "field_name=Age" \

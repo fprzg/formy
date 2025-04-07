@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"strings"
 
+	"formy.fprzg.net/internal/types"
 	"formy.fprzg.net/internal/utils"
 )
 
@@ -32,7 +33,7 @@ type FormInstance struct {
 }
 
 type FormsModelInterface interface {
-	Insert(userID int, name, description, fields string) (int, error)
+	Insert(userID int, name, description string, fields []types.FieldData) (int, error)
 	Get(formID int) (Form, error)
 	GetFormsByUserID(userID int) ([]Form, error)
 	UpdateName(formID int, name string) error
@@ -44,27 +45,12 @@ type FormsModel struct {
 	db *sql.DB
 }
 
-func (m *FormsModel) Insert(userID int, name, description, fields string) (int, error) {
-	if userID < 1 {
-		return 0, ErrInvalidUserID
-	}
-	if name == "" || fields == "" {
-		return 0, ErrInvalidInput
-	}
+func (m *FormsModel) Insert(userID int, name, description string, fields []types.FieldData) (int, error) {
 	const queryForm = `
         INSERT INTO forms (user_id, name, description)
         VALUES (?, ?, ?)
         RETURNING id, created_at, updated_at, form_version
     `
-
-	var f Form
-	err := m.db.QueryRow(queryForm, userID, name, description).Scan(&f.ID, &f.CreatedAt, &f.LastModified, &f.FormVersion)
-	if err != nil {
-		if strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
-			return 0, ErrInvalidUserID
-		}
-		return 0, err
-	}
 
 	const queryFormInstance = `
 		INSERT INTO form_instances (form_id, fields, form_version)
@@ -72,10 +58,34 @@ func (m *FormsModel) Insert(userID int, name, description, fields string) (int, 
 		RETURNING id, created_at
 	`
 
-	var fi FormInstance
-	err = m.db.QueryRow(queryFormInstance, f.ID, fields, f.FormVersion).Scan(&fi.ID, &fi.CreatedAt)
+	if userID < 1 {
+		return 0, ErrInvalidUserID
+	}
+	if name == "" || fields == nil {
+		return 0, ErrInvalidInput
+	}
 
-	return fi.FormID, err
+	fieldsJSON, err := utils.ToJSON(fields)
+	if err != nil {
+		return 0, err
+	}
+
+	var f Form
+	err = m.db.QueryRow(queryForm, userID, name, description).Scan(&f.ID, &f.CreatedAt, &f.LastModified, &f.FormVersion)
+	if err != nil {
+		if strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
+			return 0, ErrInvalidUserID
+		}
+		return 0, err
+	}
+
+	var fi FormInstance
+	err = m.db.QueryRow(queryFormInstance, f.ID, fieldsJSON, f.FormVersion).Scan(&fi.ID, &fi.CreatedAt)
+	if err != nil {
+		return 0, err
+	}
+
+	return fi.ID, nil
 }
 
 func (m *FormsModel) Get(formID int) (Form, error) {

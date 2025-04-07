@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"formy.fprzg.net/internal/types"
 	"formy.fprzg.net/internal/utils"
 )
 
@@ -24,18 +25,16 @@ const (
 )
 
 type Models struct {
-	Users         UsersModelInterface
-	Forms         FormsModelInterface
-	FormInstances FormInstancesModelInterface
-	Submissions   SubmissionsModelInterface
+	Users       UsersModelInterface
+	Forms       FormsModelInterface
+	Submissions SubmissionsModelInterface
 }
 
 func GetModels(db *sql.DB) *Models {
 	return &Models{
-		Users:         &UsersModel{db},
-		Forms:         &FormsModel{db},
-		FormInstances: &FormInstances{db},
-		Submissions:   &SubmissionsModel{db},
+		Users:       &UsersModel{db},
+		Forms:       &FormsModel{db},
+		Submissions: &SubmissionsModel{db},
 	}
 }
 
@@ -77,6 +76,18 @@ func InsertTestUser(m *Models) (int, error) {
 }
 
 func InsertTestForm(m *Models, userID int) (int, error) {
-	formID, err := m.Forms.Insert(userID, "form name", "form description", `[ {"field_name": "email", "field_type": "string", "field_contraints": ["unique"]} ]`)
-	return formID, err
+	fields := []types.FieldData{
+		{
+			Name:        "email",
+			Type:        "string",
+			Constraints: `["unique"]`,
+		},
+	}
+
+	formID, err := m.Forms.Insert(userID, "form name", "The Form Description", fields)
+	if err != nil {
+		return 0, err
+	}
+
+	return formID, nil
 }

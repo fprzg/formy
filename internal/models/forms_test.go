@@ -3,6 +3,7 @@ package models
 import (
 	"testing"
 
+	"formy.fprzg.net/internal/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +29,7 @@ func TestFormsInsert(t *testing.T) {
 		userID        int
 		name          string
 		description   string
-		fields        string
+		fields        []types.FieldData
 		expectedError error
 	}{
 		{

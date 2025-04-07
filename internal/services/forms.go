@@ -1,9 +1,6 @@
 package services
 
 import (
-	"encoding/json"
-	"strconv"
-
 	"formy.fprzg.net/internal/models"
 	"formy.fprzg.net/internal/types"
 )
@@ -16,10 +13,10 @@ type FormsServicesInterface interface {
 }
 
 type FormsServices struct {
-	fm  models.FormsModelInterface
-	fim models.FormInstancesModelInterface
+	fm models.FormsModelInterface
 }
 
+/*
 func (s *FormsServices) CreateForm(form types.FormData) (int, error) {
 	// create the form
 	jsonByte, err := json.Marshal(form.Fields)
@@ -27,20 +24,23 @@ func (s *FormsServices) CreateForm(form types.FormData) (int, error) {
 		return 0, err
 	}
 
-	json := string(jsonByte)
+	//json := string(jsonByte)
 	userID, err := strconv.Atoi(form.UserID)
 	if err != nil {
 		return 0, err
 	}
 
-	s.fm.Insert(userID, form.Name, form.Description, json)
+	formID, err := s.fm.Insert(userID, form.Name, form.Description, json)
+	if err != nil {
+		return 0, err
+	}
 
-	// create the instance
+	instanceID, err := s.fim.Insert(formID, form.Fields)
+	utils.Print(instanceID)
 
-	return 0, nil
+	return formID, nil
 }
 
-/*
 func (s *FormsServices) CreateForm(userID int, form types.JSONMap) error {
 	var err error
 	fields := ""

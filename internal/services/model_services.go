@@ -16,6 +16,6 @@ var (
 
 func GetModelServices(m *models.Models) *ModelServices {
 	return &ModelServices{
-		FormsServices: &FormsServices{fm: m.Forms, fim: m.FormInstances},
+		FormsServices: &FormsServices{fm: m.Forms},
 	}
 }
