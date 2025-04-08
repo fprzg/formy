@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -51,6 +52,7 @@ func (c *Controllers) apiRoutes(e *echo.Echo) {
 	g.PUT("/user/update", c.userUpdateHandle)
 
 	g.POST("/form/create", c.formCreateHandle)
+	g.POST("/form/get/:id", c.formGetHandle)
 	g.PUT("/form/modify", c.formModifyHandle)
 
 	g.POST("/submit/:id", c.submitHandle)
@@ -118,30 +120,37 @@ func (c *Controllers) formCreateHandle(ctx echo.Context) error {
 		ctx.String(http.StatusBadRequest, err.Error())
 	}
 
+	userID, err := strconv.Atoi(r.FormValue("user_id"))
+	if err != nil {
+		return err
+	}
+
 	formData := types.FormData{
-		UserID:      r.FormValue("user_id"),
+		UserID:      userID,
 		Name:        r.FormValue("name"),
 		Description: r.FormValue("description"),
 	}
 
 	fieldNames := r.Form["field_name"]
 	fieldTypes := r.Form["field_type"]
-	fieldConstraints := r.Form["field_constraints"]
+	fieldConstraintsString := r.Form["field_constraints"]
 
-	if len(fieldNames) == 0 || len(fieldNames) != len(fieldTypes) || len(fieldNames) != len(fieldConstraints) {
+	if len(fieldNames) == 0 || len(fieldNames) != len(fieldTypes) || len(fieldNames) != len(fieldConstraintsString) {
 		ctx.String(http.StatusBadRequest, "Invalid fields data")
 		return nil
 	}
 
 	for i := range fieldNames {
+		var fieldConstraints []types.FieldConstraint
+		err = json.Unmarshal([]byte(fieldConstraintsString[i]), &fieldConstraints)
+
 		formData.Fields = append(formData.Fields, types.FieldData{
 			Name:        fieldNames[i],
 			Type:        fieldTypes[i],
-			Constraints: fieldConstraints[i],
+			Constraints: fieldConstraints,
 		})
 	}
 
-	userID, err := strconv.Atoi(formData.UserID)
 	if err != nil {
 		ctx.String(http.StatusBadRequest,
 			fmt.Sprintf(`{ "status": "error", "message":  "%s" }`, err.Error()),
@@ -162,6 +171,11 @@ func (c *Controllers) formCreateHandle(ctx echo.Context) error {
 		fmt.Sprintf(`{ "status": "OK", "form_id":  "%d" }`, formID),
 	)
 
+	return nil
+}
+
+func (c *Controllers) formGetHandle(ctx echo.Context) error {
+	fmt.Print("asdf")
 	return nil
 }
 
