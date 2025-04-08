@@ -12,14 +12,23 @@ func TestFormsInsert(t *testing.T) {
 		t.Skip("models: skipping integration test.")
 	}
 
-	const contactFormFields = `
-	[
-		{ "field_name": "name", "field_type": "string", "constraints": ["required"] },
-		{ "field_name": "email", "field_type": "string", "constraints": ["unique", "required"] },
-		{ "field_name": "phone_number", "field_type": "string", "constraints": ["required"] },
-		{ "field_name": "message", "field_type": "string", "constraints": [] }
-	]
-	`
+	contactFormFields := []types.FieldData{
+		{
+			Name:        "name",
+			Type:        "string",
+			Constraints: []types.FieldConstraint{{Name: "required"}},
+		},
+		{
+			Name:        "email",
+			Type:        "string",
+			Constraints: []types.FieldConstraint{{Name: "unique"}},
+		},
+		{
+			Name:        "message",
+			Type:        "string",
+			Constraints: []types.FieldConstraint{},
+		},
+	}
 
 	m, err := GetTestModels()
 	assert.NoError(t, err)
@@ -57,7 +66,7 @@ func TestFormsInsert(t *testing.T) {
 			TestName:      "Invalid form fields",
 			userID:        1,
 			name:          "Simple Contact Form",
-			fields:        "",
+			fields:        nil,
 			expectedError: ErrInvalidInput,
 		},
 	}
@@ -101,13 +110,13 @@ func TestFormsGet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			_, err := m.Forms.Get(tt.formID)
+			f, err := m.Forms.Get(tt.formID)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
+				assert.Equal(t, tt.formID, f.ID)
 			} else {
 				assert.EqualError(t, tt.expectedError, err.Error())
 			}
-
 		})
 	}
 }
@@ -139,9 +148,10 @@ func TestFormsGetFormsByUserID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.TestName, func(t *testing.T) {
-			_, err := m.Forms.GetFormsByUserID(tt.userID)
+			fs, err := m.Forms.GetFormsByUserID(tt.userID)
 			if tt.expectedError == nil {
 				assert.NoError(t, err)
+				assert.NotEqual(t, nil, fs)
 			} else {
 				assert.EqualError(t, tt.expectedError, err.Error())
 			}

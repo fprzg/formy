@@ -21,13 +21,15 @@ type Submission struct {
 }
 
 type SubmissionsModelInterface interface {
+	Insert(formID, formInstanceID int, medatata string) (int, error)
+	GetData(submissionID int) (Submission, error)
 }
 
 type SubmissionsModel struct {
 	db *sql.DB
 }
 
-func (m *SubmissionsModel) InsertSubmission(formID, formInstanceID int, metadata string) error {
+func (m *SubmissionsModel) Insert(formID, formInstanceID int, metadata string) (int, error) {
 	query := `
         INSERT INTO submissions (form_id, form_instance_id, metadata)
         VALUES (?, ?, ?)
@@ -36,10 +38,10 @@ func (m *SubmissionsModel) InsertSubmission(formID, formInstanceID int, metadata
 
 	var s Submission
 	err := m.db.QueryRow(query, formID, formInstanceID, metadata).Scan(&s.ID, &s.SubmittedAt)
-	return err
+	return s.ID, err
 }
 
-func (m *SubmissionsModel) GetSubmission(id int) (Submission, error) {
+func (m *SubmissionsModel) GetData(id int) (Submission, error) {
 	query := `
         SELECT id, form_id, form_instance_id, metadata, submitted_at
         FROM submissions
@@ -54,7 +56,7 @@ func (m *SubmissionsModel) GetSubmission(id int) (Submission, error) {
 	return s, err
 }
 
-func (m *SubmissionsModel) InsertSubmissionField(submissionID, fieldName, content string) error {
+func (m *SubmissionsModel) insertField(submissionID, fieldName, content string) error {
 	query := `
         INSERT INTO submission_fields (field_name, submission_id, content)
         VALUES (?, ?, ?)
@@ -65,7 +67,7 @@ func (m *SubmissionsModel) InsertSubmissionField(submissionID, fieldName, conten
 	return err
 }
 
-func (m *SubmissionsModel) GetSubmissionFields(submissionID int) ([]SubmissionField, error) {
+func (m *SubmissionsModel) getFields(submissionID int) ([]SubmissionField, error) {
 	query := `
         SELECT field_name, submission_id, content
         FROM submission_fields

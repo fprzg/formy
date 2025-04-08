@@ -52,7 +52,7 @@ func GetTestModels() (*Models, error) {
 		return nil, err
 	}
 
-	_, err = InsertTestForm(m, userID)
+	_, err = InsertTestForms(m, userID)
 	//formID, err := InsertTestForm(m, userID)
 	if err != nil {
 		return nil, err
@@ -75,19 +75,47 @@ func InsertTestUser(m *Models) (int, error) {
 	return userID, nil
 }
 
-func InsertTestForm(m *Models, userID int) (int, error) {
-	fields := []types.FieldData{
+func InsertTestForms(m *Models, userID int) ([]int, error) {
+	form1Fields := []types.FieldData{
+		{
+			Name:        "name",
+			Type:        "string",
+			Constraints: []types.FieldConstraint{{Name: "required"}},
+		},
 		{
 			Name:        "email",
 			Type:        "string",
-			Constraints: `["unique"]`,
+			Constraints: []types.FieldConstraint{{Name: "unique"}},
 		},
 	}
 
-	formID, err := m.Forms.Insert(userID, "form name", "The Form Description", fields)
-	if err != nil {
-		return 0, err
+	form2Fields := []types.FieldData{
+		{
+			Name:        "name",
+			Type:        "string",
+			Constraints: []types.FieldConstraint{{Name: "required"}},
+		},
+		{
+			Name:        "email",
+			Type:        "string",
+			Constraints: []types.FieldConstraint{{Name: "unique"}},
+		},
 	}
 
-	return formID, nil
+	formIDs := []int{0, 0}
+
+	formID1, err := m.Forms.Insert(userID, "form1", "Form One", form1Fields)
+	if err != nil {
+		return nil, err
+	}
+
+	formID2, err := m.Forms.Insert(userID, "form2", "Form Two", form2Fields)
+	if err != nil {
+		return nil, err
+	}
+
+	formIDs[0] = formID1
+	formIDs[0] = formID2
+
+	return formIDs, nil
 }

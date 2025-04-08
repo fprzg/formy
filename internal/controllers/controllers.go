@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"formy.fprzg.net/internal/models"
-	"formy.fprzg.net/internal/services"
 	"formy.fprzg.net/internal/types"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -14,7 +13,7 @@ import (
 
 type Controllers struct {
 	m *models.Models
-	s *services.ModelServices
+	//s *services.ModelServices
 	e *echo.Echo
 }
 
@@ -22,7 +21,7 @@ func GetControllers(m *models.Models) Controllers {
 	c := Controllers{
 		e: echo.New(),
 		m: m,
-		s: services.GetModelServices(m),
+		//s: services.GetModelServices(m),
 	}
 
 	c.e.Use(middleware.Logger())
