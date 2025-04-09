@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -114,89 +112,22 @@ func (c *Controllers) userUpdateHandle(ctx echo.Context) error {
 	return nil
 }
 
-func parse(r *http.Request) (types.FormData, error) {
-	if err := r.ParseForm(); err != nil {
-		return types.FormData{}, err
-	}
-
-	userID, err := strconv.Atoi(r.FormValue("user_id"))
+func (c *Controllers) formCreateHandle(ctx echo.Context) error {
+	r := ctx.Request()
+	formID, err := c.services.Forms.ProcessForm(r, r.Context())
 	if err != nil {
-		return types.FormData{}, err
-	}
-
-	formData := types.FormData{
-		UserID:      userID,
-		Name:        r.FormValue("name"),
-		Description: r.FormValue("description"),
-	}
-
-	fieldNames := r.Form["field_name"]
-	fieldTypes := r.Form["field_type"]
-	fieldConstraintsString := r.Form["field_constraints"]
-
-	if len(fieldNames) == 0 || len(fieldNames) != len(fieldTypes) || len(fieldNames) != len(fieldConstraintsString) {
-		return types.FormData{}, fmt.Errorf("invalid fields data")
-	}
-
-	for i := range fieldNames {
-		var fieldConstraints []types.FieldConstraint
-		err = json.Unmarshal([]byte(fieldConstraintsString[i]), &fieldConstraints)
-		if err != nil {
-			return types.FormData{}, err
-		}
-
-		formData.Fields = append(formData.Fields, types.FormField{
-			Name:        fieldNames[i],
-			Type:        fieldTypes[i],
-			Constraints: fieldConstraints,
+		return ctx.JSON(http.StatusBadRequest, echo.Map{
+			"error": err.Error(),
 		})
 	}
 
-	return formData, nil
-}
-
-func (c *Controllers) formCreateHandle(ctx echo.Context) error {
-	formData, err := parse(ctx.Request())
-	if err != nil {
-		return ctx.String(http.StatusBadRequest, err.Error())
-	}
-
-	if err != nil {
-		return ctx.String(http.StatusBadRequest,
-			fmt.Sprintf(`{ "status": "error", "message":  "%s" }`, err.Error()),
-		)
-	}
-
-	formID, err := c.models.Forms.Insert(formData.UserID, formData.Name, formData.Description, formData.Fields)
-	//formID, err := c.s.FormsServices.CreateForm(formData)
-	if err != nil {
-		return ctx.String(http.StatusBadRequest,
-			fmt.Sprintf(`{ "status": "error", "message":  "%s" }`, err.Error()),
-		)
-	}
-
-	return ctx.String(http.StatusOK,
-		fmt.Sprintf(`{ "status": "OK", "form_id":  "%d" }`, formID),
-	)
+	return ctx.JSON(http.StatusOK, echo.Map{
+		"form_id": formID,
+	})
 }
 
 func (c *Controllers) formGetHandle(ctx echo.Context) error {
-	formID, err := strconv.Atoi(ctx.Param("id"))
-	if err != nil {
-		return ctx.String(http.StatusBadRequest, err.Error())
-	}
-
-	formData, err := c.models.Forms.Get(formID)
-	if err != nil {
-		return ctx.String(http.StatusBadRequest, err.Error())
-	}
-
-	formByte, err := json.Marshal(formData)
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
-	}
-
-	return ctx.String(http.StatusOK, string(formByte))
+	return nil
 }
 
 func (c *Controllers) formModifyHandle(ctx echo.Context) error {
@@ -223,16 +154,7 @@ func (c *Controllers) submissionNewHandle(ctx echo.Context) error {
 	}
 
 	r := ctx.Request()
-	if err := r.ParseForm(); err != nil {
-		ctx.String(http.StatusBadRequest, err.Error())
-		return err
-	}
-
-	if err != nil {
-		return ctx.String(http.StatusBadRequest, err.Error())
-	}
-
-	submissionID, err := c.services.Submission.ProcessSubmissionForm(formID, r, r.Context())
+	submissionID, err := c.services.Submissions.ProcessSubmission(formID, r, r.Context())
 	if err != nil {
 		return ctx.String(http.StatusBadRequest, err.Error())
 	}

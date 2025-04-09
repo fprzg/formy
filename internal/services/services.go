@@ -3,11 +3,13 @@ package services
 import "formy.fprzg.net/internal/models"
 
 type Services struct {
-	Submission SubmissionServiceInterface
+	Submissions SubmissionsServiceInterface
+	Forms       FormsServiceInterface
 }
 
 func Get(m *models.Models) *Services {
 	return &Services{
-		Submission: &SubmissionService{m},
+		Submissions: &SubmissionsService{m},
+		Forms:       &FormsService{m},
 	}
 }

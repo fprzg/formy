@@ -12,21 +12,22 @@ import (
 	"formy.fprzg.net/internal/types"
 )
 
-type SubmissionService struct {
+type SubmissionsService struct {
 	models *models.Models
 }
 
-type SubmissionServiceInterface interface {
-	ProcessSubmissionForm(formID int, r *http.Request, ctx context.Context) (int, error)
+type SubmissionsServiceInterface interface {
+	ProcessSubmission(formID int, r *http.Request, ctx context.Context) (int, error)
+	ParseSubmissionFromRequest(form types.FormData, r *http.Request, ctx context.Context) (types.SubmissionData, error)
 }
 
-func (s *SubmissionService) ProcessSubmissionForm(formID int, r *http.Request, ctx context.Context) (int, error) {
+func (s *SubmissionsService) ProcessSubmission(formID int, r *http.Request, ctx context.Context) (int, error) {
 	formData, err := s.models.Forms.Get(formID)
 	if err != nil {
 		return 0, err
 	}
 
-	submission, err := s.GetSubmissionDataFromRequest(formData, r, ctx)
+	submission, err := s.ParseSubmissionFromRequest(formData, r, ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -34,7 +35,7 @@ func (s *SubmissionService) ProcessSubmissionForm(formID int, r *http.Request, c
 	return s.models.Submissions.Insert(submission, ctx)
 }
 
-func (s *SubmissionService) GetSubmissionDataFromRequest(form types.FormData, r *http.Request, ctx context.Context) (types.SubmissionData, error) {
+func (s *SubmissionsService) ParseSubmissionFromRequest(form types.FormData, r *http.Request, ctx context.Context) (types.SubmissionData, error) {
 	formInstanceID, err := s.models.Forms.GetFormInstanceID(form.ID)
 	if err != nil {
 		return types.SubmissionData{}, err
