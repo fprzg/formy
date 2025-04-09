@@ -12,7 +12,7 @@ func TestFormsInsert(t *testing.T) {
 		t.Skip("models: skipping integration test.")
 	}
 
-	contactFormFields := []types.FieldData{
+	contactFormFields := []types.FormField{
 		{
 			Name:        "name",
 			Type:        "string",
@@ -38,7 +38,7 @@ func TestFormsInsert(t *testing.T) {
 		userID        int
 		name          string
 		description   string
-		fields        []types.FieldData
+		fields        []types.FormField
 		expectedError error
 	}{
 		{
@@ -196,7 +196,6 @@ func TestFormsUpdateName(t *testing.T) {
 			} else {
 				assert.EqualError(t, tt.expectedError, err.Error())
 			}
-
 		})
 	}
 }
@@ -240,6 +239,83 @@ func TestFormsUpdateDescription(t *testing.T) {
 
 		})
 	}
+}
+
+func TestFormsUpdateFields(t *testing.T) {
+	if testing.Short() {
+		t.Skip("models: skipping integration test")
+	}
+
+	m, err := GetTestModels()
+	assert.NoError(t, err)
+
+	tests := []struct {
+		TestName             string
+		formID               int
+		fields               []types.FormField
+		expectedFieldVersion int
+		expectedError        error
+	}{
+		{
+			TestName: "Valid ID",
+			formID:   1,
+			fields: []types.FormField{
+				{
+					Name:        "name",
+					Type:        "string",
+					Constraints: nil,
+				},
+				{
+					Name:        "age",
+					Type:        "int",
+					Constraints: nil,
+				},
+			},
+			expectedFieldVersion: 2,
+			expectedError:        nil,
+		},
+		{
+			TestName: "Empty forms",
+			formID:   1,
+			fields: []types.FormField{
+				{
+					Name:        "name",
+					Type:        "string",
+					Constraints: nil,
+				},
+				{
+					Name:        "age",
+					Type:        "int",
+					Constraints: nil,
+				},
+				{
+					Name:        "comment",
+					Type:        "string",
+					Constraints: nil,
+				},
+			},
+			expectedFieldVersion: 3,
+			expectedError:        nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.TestName, func(t *testing.T) {
+			fv, err := m.Forms.UpdateFields(tt.formID, tt.fields)
+			if tt.expectedError == nil {
+				assert.NoError(t, err)
+				assert.NotEqual(t, nil, fv)
+			} else {
+				assert.EqualError(t, tt.expectedError, err.Error())
+			}
+		})
+	}
+
+	/*
+		forms, err := m.Forms.GetFormInstances(1)
+		assert.NoError(t, err)
+		utils.Print(forms)
+	*/
 }
 
 func TestFormsUpdateDeleteForm(t *testing.T) {

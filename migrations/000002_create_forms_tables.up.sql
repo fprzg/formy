@@ -9,7 +9,7 @@ CREATE TABLE forms (
     description TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    form_version INTEGER DEFAULT 1,
+    form_version INTEGER DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -23,3 +23,12 @@ CREATE TABLE form_instances (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE
 );
+
+CREATE TRIGGER increment_form_version
+AFTER INSERT ON form_instances
+FOR EACH ROW
+BEGIN
+    UPDATE forms
+    SET form_version = form_version + 1
+    WHERE id = NEW.form_id;
+END;

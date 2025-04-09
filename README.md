@@ -14,3 +14,4 @@
 - [ ] Upload the client-side javascript scripts to a cdn?? (Cloudflare cache may be enough tho).
 - [ ] Support database backups and security/integrity checks.
 - [ ] Testing suite.
+- [ ] Guardar los campos que recibimos pero no esperamos y reportar el incidente al usuario dueño del form.

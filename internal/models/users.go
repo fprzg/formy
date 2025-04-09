@@ -32,10 +32,12 @@ type UsersModelInterface interface {
 	UpdateName(id int, name, password string) error
 	UpdateEmail(id int, email, password string) error
 	UpdatePassword(id int, oldPwd, newPwd string) error
+	TransactionDuration() time.Duration
 }
 
 type UsersModel struct {
-	db *sql.DB
+	db                  *sql.DB
+	transactionDuration time.Duration
 }
 
 func (m *UsersModel) Insert(name, email, password string) (int, error) {
@@ -230,4 +232,8 @@ func (m *UsersModel) UpdatePassword(id int, oldPwd, newPwdRaw string) error {
 	}
 
 	return err
+}
+
+func (m *UsersModel) TransactionDuration() time.Duration {
+	return m.transactionDuration
 }

@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"log"
+	"time"
 
 	"formy.fprzg.net/internal/types"
 	"formy.fprzg.net/internal/utils"
@@ -30,35 +32,58 @@ type Models struct {
 	Submissions SubmissionsModelInterface
 }
 
-func GetModels(db *sql.DB) *Models {
-	return &Models{
-		Users:       &UsersModel{db},
-		Forms:       &FormsModel{db},
-		Submissions: &SubmissionsModel{db},
-	}
+func GetModels(cfg types.AppConfig) (*Models, error) {
+	db, duration, err := DatabaseSetup(cfg)
+	return models(db, duration), err
 }
 
-// maybe we want to know the IDs of the user, form, form instance, submissions, etc
-func GetTestModels() (*Models, error) {
-	db, err := utils.SetupTestDB()
-	if err != nil {
-		panic(err)
+func DatabaseSetup(cfg types.AppConfig) (*sql.DB, time.Duration, error) {
+	var db *sql.DB
+	var duration time.Duration
+	var err error
+
+	if cfg.Env == "development" || cfg.Env == "testing" {
+		duration = 1 * time.Hour
+
+		db, err = utils.SetupTestDB()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		m := models(db, duration)
+
+		userID, err := InsertTestUser(m)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		_, err = InsertTestForms(m, userID)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	} else {
+		duration = 3 * time.Second
+		db, err = sql.Open("sqlite3", cfg.DBDir)
 	}
 
-	m := GetModels(db)
+	return db, duration, err
+}
 
-	userID, err := InsertTestUser(m)
-	if err != nil {
-		return nil, err
+func models(db *sql.DB, duration time.Duration) *Models {
+	return &Models{
+		Users: &UsersModel{
+			db:                  db,
+			transactionDuration: duration,
+		},
+		Forms: &FormsModel{
+			db:                  db,
+			transactionDuration: duration,
+		},
+		Submissions: &SubmissionsModel{
+			db:                  db,
+			transactionDuration: duration,
+		},
 	}
-
-	_, err = InsertTestForms(m, userID)
-	//formID, err := InsertTestForm(m, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	return m, nil
 }
 
 func InsertTestUser(m *Models) (int, error) {
@@ -76,7 +101,30 @@ func InsertTestUser(m *Models) (int, error) {
 }
 
 func InsertTestForms(m *Models, userID int) ([]int, error) {
-	form1Fields := []types.FieldData{
+	form1Fields := []types.FormField{
+		{
+			Name:        "name",
+			Type:        "string",
+			Constraints: []types.FieldConstraint{{Name: "required"}},
+		},
+		{
+			Name:        "email",
+			Type:        "string",
+			Constraints: []types.FieldConstraint{{Name: "email"}, {Name: "unique"}},
+		},
+		{
+			Name:        "subject",
+			Type:        "string",
+			Constraints: nil,
+		},
+		{
+			Name:        "message",
+			Type:        "string",
+			Constraints: nil,
+		},
+	}
+
+	form2Fields := []types.FormField{
 		{
 			Name:        "name",
 			Type:        "string",
@@ -89,33 +137,15 @@ func InsertTestForms(m *Models, userID int) ([]int, error) {
 		},
 	}
 
-	form2Fields := []types.FieldData{
-		{
-			Name:        "name",
-			Type:        "string",
-			Constraints: []types.FieldConstraint{{Name: "required"}},
-		},
-		{
-			Name:        "email",
-			Type:        "string",
-			Constraints: []types.FieldConstraint{{Name: "unique"}},
-		},
-	}
-
-	formIDs := []int{0, 0}
-
-	formID1, err := m.Forms.Insert(userID, "form1", "Form One", form1Fields)
+	fid1, err := m.Forms.Insert(userID, "hapaxredux.com contact form", "Contact form for hapaxredux.com CTA.", form1Fields)
 	if err != nil {
 		return nil, err
 	}
 
-	formID2, err := m.Forms.Insert(userID, "form2", "Form Two", form2Fields)
+	fid2, err := m.Forms.Insert(userID, "form2", "Form Two", form2Fields)
 	if err != nil {
 		return nil, err
 	}
 
-	formIDs[0] = formID1
-	formIDs[0] = formID2
-
-	return formIDs, nil
+	return []int{fid1, fid2}, nil
 }

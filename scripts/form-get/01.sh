@@ -1,3 +1,3 @@
 #! /bin/bash
 
-curl -X POST http://localhost:3000/api/form/get/1
+curl -X POST http://localhost:3000/api/submit/1

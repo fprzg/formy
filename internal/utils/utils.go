@@ -11,7 +11,7 @@ func PrintType(v interface{}) {
 }
 
 func Print(v interface{}) {
-	fmt.Printf("%v", v)
+	fmt.Printf("%v\n", v)
 }
 
 func ToJSON(v any) (*string, error) {
