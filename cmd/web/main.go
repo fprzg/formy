@@ -1,25 +1,24 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
+	"log"
+	"os"
 
-	"formy.fprzg.net/internal/controllers"
-	"formy.fprzg.net/internal/models"
 	"formy.fprzg.net/internal/types"
+	"formy.fprzg.net/internal/utils"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var (
-	cfg = types.AppConfig{}
-)
-
 func main() {
+	var cfg types.AppConfig
 	flag.StringVar(&cfg.Port, "port", ":3000", "API server port.")
 	flag.StringVar(&cfg.Env, "env", "development", "Environment (testing | development | staging | production)")
 
-	flag.StringVar(&cfg.DBDir, "dbDir", "./app.db", "Database directory.")
+	flag.StringVar(&cfg.DBDir, "db-dir", "./app.db", "Database directory.")
 
 	// rate-limiter config
 	// smtp server config
@@ -30,12 +29,34 @@ func main() {
 		panic(fmt.Errorf("invalid environment: '%s'", cfg.Env))
 	}
 
-	m, err := models.GetModels(cfg)
+	wd, err := os.Getwd()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
+	}
+	log.Print(wd)
+
+	var db *sql.DB
+	//var err error
+	if cfg.Env == "development" {
+		db, err = utils.NewTestDB()
+	} else {
+		db, err = sql.Open("sqlite3", cfg.DBDir)
+	}
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	c := controllers.New(m)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
-	c.Start(cfg)
+	app, err := NewServer(cfg, db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = app.Serve(); err != nil {
+		log.Fatal(err)
+	}
 }

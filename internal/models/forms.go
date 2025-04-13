@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"formy.fprzg.net/internal/types"
 	"formy.fprzg.net/internal/utils"
+	"github.com/labstack/echo/v4"
 )
 
 /*
@@ -36,12 +36,11 @@ type FormsModelInterface interface {
 	//UpdateDescription(formID int, description string) error
 	//UpdateFields(formID int, fields []types.FieldDescriptor) (int, error)
 	//DeleteForm(formID int) error
-	TransactionDuration() time.Duration
 }
 
 type FormsModel struct {
-	db                  *sql.DB
-	transactionDuration time.Duration
+	db *sql.DB
+	e  *echo.Echo
 }
 
 func (m *FormsModel) Insert(userID int, name, description string, fields []types.FormField) (int, error) {
@@ -325,7 +324,3 @@ func (m *FormsModel) DeleteForm(formID int) error {
 	return err
 }
 */
-
-func (m *FormsModel) TransactionDuration() time.Duration {
-	return m.transactionDuration
-}

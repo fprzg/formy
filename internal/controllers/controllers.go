@@ -6,36 +6,28 @@ import (
 
 	"formy.fprzg.net/internal/models"
 	"formy.fprzg.net/internal/services"
-	"formy.fprzg.net/internal/types"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 type Controllers struct {
 	models   *models.Models
-	e        *echo.Echo
 	services *services.Services
+	e        *echo.Echo
 }
 
-func New(m *models.Models) Controllers {
-	c := Controllers{
-		e:        echo.New(),
+// func GetControllers() (*Controllers, error) {
+func Get(m *models.Models, s *services.Services, e *echo.Echo) (*Controllers, error) {
+	c := &Controllers{
 		models:   m,
-		services: services.Get(m),
+		services: s,
+		e:        e,
 	}
 
-	c.e.Use(middleware.Logger())
-	c.e.Use(middleware.Recover())
+	c.apiRoutes()
+	c.frontendRoutes()
+	c.uiRoutes()
 
-	c.apiRoutes(c.e)
-	c.frontendRoutes(c.e)
-	c.uiRoutes(c.e)
-
-	return c
-}
-
-func (c *Controllers) Start(cfg types.AppConfig) error {
-	return c.e.Start(cfg.Port)
+	return c, nil
 }
 
 func (c *Controllers) pingHandle(ctx echo.Context) error {
@@ -44,8 +36,8 @@ func (c *Controllers) pingHandle(ctx echo.Context) error {
 	})
 }
 
-func (c *Controllers) apiRoutes(e *echo.Echo) {
-	g := e.Group("/api")
+func (c *Controllers) apiRoutes() {
+	g := c.e.Group("/api")
 
 	g.POST("/user/register", c.userRegisterHandle)
 	g.PUT("/user/update", c.userUpdateHandle)
@@ -57,15 +49,15 @@ func (c *Controllers) apiRoutes(e *echo.Echo) {
 	g.POST("/submission/new/:id", c.submissionNewHandle)
 }
 
-func (c *Controllers) frontendRoutes(e *echo.Echo) {
-	g := e.Group("/")
+func (c *Controllers) frontendRoutes() {
+	g := c.e.Group("")
 
-	g.GET("/", c.dummyFormHandler)
+	g.GET("/xx", c.dummyFormHandler)
 	g.GET("/ping", c.pingHandle)
 }
 
-func (c *Controllers) uiRoutes(e *echo.Echo) {
-	_ = e.Group("/ui")
+func (c *Controllers) uiRoutes() {
+	_ = c.e.Group("/ui")
 
 	//e.GET("/user/:id", uiUsersGethandler)
 	//e.GET("/form/:id", uiFormsGethandler)
@@ -162,36 +154,44 @@ func (c *Controllers) submissionNewHandle(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, echo.Map{
 		"message":       "success",
 		"submission_id": submissionID,
-		//"form_type": formType,
-		//"data": formValues,
 	})
 }
 
 func (c *Controllers) dummyFormHandler(ctx echo.Context) error {
-	html := `
-	<!DOCTYPE html>
-	<html>
-	<body>
-		<h2>Simple Form</h2>
-		<form method="POST" action="/api/submit/1">
-			<div>
-				<label>Name:</label><br>
-				<input type="text" name="name" required><br>
-			</div>
-			<div>
-				<label>Email:</label><br>
-				<input type="email" name="email" required><br>
-			</div>
-			<div>
-				<label>Message:</label><br>
-				<input type="text" name="message" required><br>
-			</div>
-			<div>
-				<input type="submit" value="Submit">
-			</div>
-		</form>
-	</body>
-	</html>`
+	/*
+		const html = `
+		<!DOCTYPE html>
+		<html>
+		<body>
+			<h2>Simple Form</h2>
+			<form method="POST" action="/api/submit/1">
+				<div>
+					<label>Name:</label><br>
+					<input type="text" name="name" required><br>
+				</div>
+				<div>
+					<label>Email:</label><br>
+					<input type="email" name="email" required><br>
+				</div>
+				<div>
+					<label>Message:</label><br>
+					<input type="text" name="message" required><br>
+				</div>
+				<div>
+					<input type="submit" value="Submit">
+				</div>
+			</form>
+		</body>
+		</html>`
+
+		return ctx.HTML(http.StatusOK, html)
+	*/
+	html, err := c.services.TemplateManager.ExecuteTemplate("base.tmpl.html", map[string]string{
+		"__": "None",
+	})
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
 
 	return ctx.HTML(http.StatusOK, html)
 }

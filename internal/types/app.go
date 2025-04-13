@@ -8,8 +8,9 @@ import (
 
 type AppConfig struct {
 	Port  string
-	DBDir string
 	Env   string
+	DBDir string
+	UIDir string
 }
 
 type UserData struct {

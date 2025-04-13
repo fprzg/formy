@@ -19,6 +19,8 @@ type Migration struct {
 	Path    string
 }
 
+const MigrationsDir = "../../migrations"
+
 func ExecuteSqlStmt(db *sql.DB, stmt string, args ...any) (int64, error) {
 	result, err := db.Exec(stmt, args...)
 	if err != nil {
@@ -33,19 +35,18 @@ func ExecuteSqlStmt(db *sql.DB, stmt string, args ...any) (int64, error) {
 	return rowsAffected, nil
 }
 
-func SetupTestDB() (*sql.DB, error) {
-	return SetupDB(":memory:")
+func NewTestDB() (*sql.DB, error) {
+	return InitAndMigrateDB(":memory:")
 }
 
-func SetupDB(dbPath string) (*sql.DB, error) {
-	const migrationsDir = "../../migrations"
+func InitAndMigrateDB(dbPath string) (*sql.DB, error) {
 
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, err
 	}
 
-	migrations, err := LoadMigrations(migrationsDir)
+	migrations, err := LoadMigrations(MigrationsDir)
 	if err != nil {
 		return nil, err
 	}

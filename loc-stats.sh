@@ -31,5 +31,6 @@ print_stats() {
 }
 
 print_stats "*.go" "GO"
+print_stats "*.html" "HTML"
 print_stats "*.sql" "SQL"
 print_stats "*.sh" "SCRIPTS"

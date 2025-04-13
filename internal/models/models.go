@@ -3,11 +3,10 @@ package models
 import (
 	"database/sql"
 	"errors"
-	"log"
 	"time"
 
 	"formy.fprzg.net/internal/types"
-	"formy.fprzg.net/internal/utils"
+	"github.com/labstack/echo/v4"
 )
 
 var (
@@ -32,58 +31,27 @@ type Models struct {
 	Submissions SubmissionsModelInterface
 }
 
-func GetModels(cfg types.AppConfig) (*Models, error) {
-	db, duration, err := DatabaseSetup(cfg)
-	return models(db, duration), err
-}
+var contextDuration time.Duration
 
-func DatabaseSetup(cfg types.AppConfig) (*sql.DB, time.Duration, error) {
-	var db *sql.DB
-	var duration time.Duration
-	var err error
+func Get(db *sql.DB, e *echo.Echo, ctxDuration time.Duration) (*Models, error) {
+	contextDuration = ctxDuration
 
-	if cfg.Env == "development" || cfg.Env == "testing" {
-		duration = 1 * time.Hour
-
-		db, err = utils.SetupTestDB()
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-
-		m := models(db, duration)
-
-		userID, err := InsertTestUser(m)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-
-		_, err = InsertTestForms(m, userID)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-	} else {
-		duration = 3 * time.Second
-		db, err = sql.Open("sqlite3", cfg.DBDir)
-	}
-
-	return db, duration, err
-}
-
-func models(db *sql.DB, duration time.Duration) *Models {
-	return &Models{
+	m := &Models{
 		Users: &UsersModel{
-			db:                  db,
-			transactionDuration: duration,
+			db: db,
+			e:  e,
 		},
 		Forms: &FormsModel{
-			db:                  db,
-			transactionDuration: duration,
+			db: db,
+			e:  e,
 		},
 		Submissions: &SubmissionsModel{
-			db:                  db,
-			transactionDuration: duration,
+			db: db,
+			e:  e,
 		},
 	}
+
+	return m, nil
 }
 
 func InsertTestUser(m *Models) (int, error) {

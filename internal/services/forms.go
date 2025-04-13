@@ -9,10 +9,12 @@ import (
 
 	"formy.fprzg.net/internal/models"
 	"formy.fprzg.net/internal/types"
+	"github.com/labstack/echo/v4"
 )
 
 type FormsService struct {
 	models *models.Models
+	e      *echo.Echo
 }
 
 type FormsServiceInterface interface {

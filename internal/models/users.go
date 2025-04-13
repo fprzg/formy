@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"formy.fprzg.net/internal/utils"
+	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -32,12 +33,11 @@ type UsersModelInterface interface {
 	UpdateName(id int, name, password string) error
 	UpdateEmail(id int, email, password string) error
 	UpdatePassword(id int, oldPwd, newPwd string) error
-	TransactionDuration() time.Duration
 }
 
 type UsersModel struct {
-	db                  *sql.DB
-	transactionDuration time.Duration
+	db *sql.DB
+	e  *echo.Echo
 }
 
 func (m *UsersModel) Insert(name, email, password string) (int, error) {
@@ -232,8 +232,4 @@ func (m *UsersModel) UpdatePassword(id int, oldPwd, newPwdRaw string) error {
 	}
 
 	return err
-}
-
-func (m *UsersModel) TransactionDuration() time.Duration {
-	return m.transactionDuration
 }

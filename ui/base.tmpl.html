@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario Dinámico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const vencimientoToggle = document.getElementById('vencimiento-toggle');
+            const vencimientoField = document.getElementById('vencimiento-field');
+            const camposContainer = document.getElementById('campos-container');
+            const addCampoBtn = document.getElementById('add-campo');
+
+            vencimientoToggle.addEventListener('change', () => {
+                if (vencimientoToggle.checked) {
+                    vencimientoField.classList.remove('hidden');
+                } else {
+                    vencimientoField.classList.add('hidden');
+                }
+            });
+
+            addCampoBtn.addEventListener('click', () => {
+                const campo = document.createElement('div');
+                campo.className = 'campo bg-white p-4 rounded-xl shadow-md grid grid-cols-1 md:grid-cols-4 gap-4 items-end animate-fade-in-down';
+
+                campo.innerHTML = `
+          <div>
+            <label class="block text-sm font-medium">Nombre</label>
+            <input type="text" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" placeholder="Nombre del campo">
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Tipo</label>
+            <select class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+              <option>Texto</option>
+              <option>Número</option>
+              <option>Fecha</option>
+              <option>Booleano</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Constraints</label>
+            <select multiple class="mt-1 w-full rounded-md border-gray-300 shadow-sm h-24">
+              <option>Requerido</option>
+              <option>Único</option>
+              <option>MinLength</option>
+              <option>MaxLength</option>
+            </select>
+          </div>
+          <button type="button" class="text-red-500 font-bold text-xl hover:text-red-700 transition" title="Eliminar campo">✕</button>
+        `;
+
+                campo.querySelector('button').addEventListener('click', () => {
+                    if (confirm('¿Seguro que deseas eliminar este campo?')) {
+                        campo.classList.add('animate-fade-out');
+                        setTimeout(() => campo.remove(), 300);
+                    }
+                });
+
+                camposContainer.appendChild(campo);
+            });
+        });
+    </script>
+    <style>
+        @keyframes fade-in-down {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fade-out {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+        }
+
+        .animate-fade-in-down {
+            animation: fade-in-down 0.3s ease-out;
+        }
+
+        .animate-fade-out {
+            animation: fade-out 0.3s ease-in forwards;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 p-6 text-gray-800">
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-xl space-y-6">
+        <h1 class="text-3xl font-bold mb-4">Formulario Dinámico</h1>
+
+        <form class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium">Nombre</label>
+                <input type="text" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"
+                    placeholder="Escribe un nombre">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium">Descripción</label>
+                <textarea class="mt-1 w-full rounded-md border-gray-300 shadow-sm"
+                    placeholder="Escribe una descripción"></textarea>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="vencimiento-toggle"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="vencimiento-toggle" class="text-sm font-medium">¿Fecha de vencimiento?</label>
+            </div>
+
+            <div id="vencimiento-field" class="hidden">
+                <label class="block text-sm font-medium">Selecciona fecha y hora</label>
+                <input type="datetime-local" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+            </div>
+
+            <div>
+                <h2 class="text-xl font-semibold mb-2">Campos</h2>
+                <div id="campos-container" class="space-y-4"></div>
+                <button type="button" id="add-campo"
+                    class="mt-4 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">+
+                    Agregar Campo</button>
+            </div>
+
+            <div>
+                <button type="submit"
+                    class="w-full mt-6 px-4 py-2 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition">Enviar</button>
+            </div>
+        </form>
+    </div>
+</body>
+
+</html>

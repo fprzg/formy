@@ -5,15 +5,17 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"reflect"
 
 	"formy.fprzg.net/internal/models"
 	"formy.fprzg.net/internal/types"
+	"github.com/labstack/echo/v4"
 )
 
 type SubmissionsService struct {
 	models *models.Models
+	e      *echo.Echo
 }
 
 type SubmissionsServiceInterface interface {
@@ -55,7 +57,7 @@ func (s *SubmissionsService) ParseSubmissionFromRequest(form types.FormData, r *
 		fieldIndex := form.GetFieldIndex(fieldName)
 		if fieldIndex == -1 {
 			// TODO: Report incident
-			log.Printf("Insert: unknown field %s; skipping", fieldName)
+			s.e.Logger.Printf("Insert: unknown field %s; skipping.\n", fieldName)
 			continue
 		}
 
@@ -67,18 +69,26 @@ func (s *SubmissionsService) ParseSubmissionFromRequest(form types.FormData, r *
 			Content: fieldContents[0],
 		}
 
-		buf, err := json.Marshal(subField.Content)
-		if err != nil {
-			return types.SubmissionData{}, fmt.Errorf("insert: failed to marshal field data: %v", err)
-
+		if !types.TypesMatch(subField.Content, subField.Type) {
+			receivedType := reflect.ValueOf(subField.Content).Kind()
+			return types.SubmissionData{}, fmt.Errorf("invalid field type at '%s': expected '%s' but received '%v'", subField.Name, subField.Type, receivedType)
 		}
 
-		subField.ContentAsString = string(buf)
+		if subField.Type == "string" {
+			subField.ContentAsString = subField.Content.(string)
+		} else {
+
+			buf, err := json.Marshal(subField.Content)
+			if err != nil {
+				return types.SubmissionData{}, fmt.Errorf("insert: failed to marshal field data: %v", err)
+			}
+			subField.ContentAsString = string(buf)
+		}
 
 		for _, constraint := range formField.Constraints {
 			if constraint.Name == "unique" {
 				h := sha256.New()
-				h.Write(buf)
+				h.Write([]byte(subField.ContentAsString))
 				fieldHash := string(h.Sum(nil))
 
 				exists, err := s.models.Submissions.CheckForRepeatedUniqueField(formInstanceID, fieldName, fieldHash)
@@ -86,7 +96,7 @@ func (s *SubmissionsService) ParseSubmissionFromRequest(form types.FormData, r *
 					return types.SubmissionData{}, err
 				}
 				if exists {
-					log.Printf("Insert: duplicate unique field detected: %v", fieldName)
+					s.e.Logger.Printf("Insert: duplicate unique field detected: '%s'.\n", fieldName)
 					return types.SubmissionData{}, fmt.Errorf("models: duplicate unique field %v", fieldName)
 				}
 
@@ -98,7 +108,7 @@ func (s *SubmissionsService) ParseSubmissionFromRequest(form types.FormData, r *
 		submission.Fields = append(submission.Fields, subField)
 
 		if len(fieldContents) > 1 {
-			log.Printf("Insert: multiple values for field %s; only first saved", fieldName)
+			s.e.Logger.Printf("Insert: multiple values for field %s; only first saved.\n", fieldName)
 		}
 	}
 
