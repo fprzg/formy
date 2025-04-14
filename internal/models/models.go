@@ -20,15 +20,15 @@ var (
 )
 
 const (
-	ValidUserName     = "Alice"
-	ValidUserEmail    = "alice@example.com"
+	ValidUserName     = "alice"
 	ValidUserPassword = "securepass"
 )
 
 type Models struct {
-	Users       UsersModelInterface
-	Forms       FormsModelInterface
-	Submissions SubmissionsModelInterface
+	Users           UsersModelInterface
+	Forms           FormsModelInterface
+	Submissions     SubmissionsModelInterface
+	contextDuration time.Duration
 }
 
 var contextDuration time.Duration
@@ -55,12 +55,12 @@ func Get(db *sql.DB, e *echo.Echo, ctxDuration time.Duration) (*Models, error) {
 }
 
 func InsertTestUser(m *Models) (int, error) {
-	userID, err := m.Users.Insert(ValidUserName, ValidUserEmail, ValidUserPassword)
+	userID, err := m.Users.Insert(ValidUserName, ValidUserPassword)
 	if err != nil {
 		return 0, err
 	}
 
-	_, err = m.Users.Authenticate(ValidUserEmail, ValidUserPassword)
+	_, err = m.Users.Authenticate(ValidUserName, ValidUserPassword)
 	if err != nil {
 		return 0, err
 	}

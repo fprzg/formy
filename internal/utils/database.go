@@ -36,27 +36,30 @@ func ExecuteSqlStmt(db *sql.DB, stmt string, args ...any) (int64, error) {
 }
 
 func NewTestDB() (*sql.DB, error) {
-	return InitAndMigrateDB(":memory:")
-}
-
-func InitAndMigrateDB(dbPath string) (*sql.DB, error) {
-
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		return nil, err
 	}
 
-	migrations, err := LoadMigrations(MigrationsDir)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ApplyMigrations(db, migrations, GetLatestVersion(migrations))
-	if err != nil {
+	if err = MigrateDB(db); err != nil {
 		return nil, err
 	}
 
 	return db, nil
+}
+
+func MigrateDB(db *sql.DB) error {
+	migrations, err := LoadMigrations(MigrationsDir)
+	if err != nil {
+		return err
+	}
+
+	err = ApplyMigrations(db, migrations, GetLatestVersion(migrations))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func LoadMigrations(dir string) ([]Migration, error) {

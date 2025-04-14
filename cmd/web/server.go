@@ -14,6 +14,8 @@ import (
 	"formy.fprzg.net/internal/models"
 	"formy.fprzg.net/internal/services"
 	"formy.fprzg.net/internal/types"
+	"github.com/golang-jwt/jwt/v5"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -52,6 +54,14 @@ func NewServer(cfg types.AppConfig, db *sql.DB) (Server, error) {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	jwtConfig := echojwt.Config{
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(services.JWTCustomClaims)
+		},
+		SigningKey:  []byte(cfg.JWTSecret),
+		TokenLookup: "cookie:jwt",
+	}
+
 	tm, err := services.NewTemplateManager(cfg.Env == "development", e)
 	if err != nil {
 		return Server{}, err
@@ -62,12 +72,17 @@ func NewServer(cfg types.AppConfig, db *sql.DB) (Server, error) {
 		return Server{}, err
 	}
 
-	s, err := services.Get(m, tm, e)
+	s, err := services.Get(cfg.JWTSecret, m, tm, e)
 	if err != nil {
 		return Server{}, err
 	}
 
-	c, err := controllers.Get(m, s, e, cfg.JWTSecret)
+	c, err := controllers.Get(m, s, e, jwtConfig)
+	if err != nil {
+		return Server{}, err
+	}
+
+	err = insertDummyData(m)
 	if err != nil {
 		return Server{}, err
 	}

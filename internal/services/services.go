@@ -6,15 +6,17 @@ import (
 )
 
 type Services struct {
-	Submissions     SubmissionsServiceInterface
-	Forms           FormsServiceInterface
+	jwtSecret       string
+	models          *models.Models
+	e               *echo.Echo
 	TemplateManager *TemplateManager
 }
 
-func Get(m *models.Models, tm *TemplateManager, e *echo.Echo) (*Services, error) {
+func Get(jwtSecret string, m *models.Models, tm *TemplateManager, e *echo.Echo) (*Services, error) {
 	return &Services{
-		Submissions:     &SubmissionsService{m, e},
-		Forms:           &FormsService{m, e},
+		jwtSecret:       jwtSecret,
+		models:          m,
+		e:               e,
 		TemplateManager: tm,
 	}, nil
 }

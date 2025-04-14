@@ -4,8 +4,7 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
+    user_name TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -14,13 +13,13 @@ CREATE TABLE users (
     token_version INTEGER DEFAULT 0
 );
 
-CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_email ON users(user_name);
 
 --
 --      EXAMPLE
 --
--- INSERT INTO users (name, email, password)
--- VALUES ('John Doe', 'john@doe.com', 'hashed_password');
+-- INSERT INTO users (username, password)
+-- VALUES ('crammer96', 'hashed_password');
 ---
 
 

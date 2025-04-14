@@ -8,22 +8,15 @@ import (
 	"net/http"
 	"reflect"
 
-	"formy.fprzg.net/internal/models"
 	"formy.fprzg.net/internal/types"
-	"github.com/labstack/echo/v4"
 )
-
-type SubmissionsService struct {
-	models *models.Models
-	e      *echo.Echo
-}
 
 type SubmissionsServiceInterface interface {
 	ProcessSubmission(formID int, r *http.Request, ctx context.Context) (int, error)
 	GetSubmissionFromRequest(form types.FormData, r *http.Request, ctx context.Context) (types.SubmissionData, error)
 }
 
-func (s *SubmissionsService) ProcessSubmission(formID int, r *http.Request, ctx context.Context) (int, error) {
+func (s *Services) ProcessSubmission(formID int, r *http.Request, ctx context.Context) (int, error) {
 	formData, err := s.models.Forms.Get(formID)
 	if err != nil {
 		return 0, err
@@ -37,7 +30,7 @@ func (s *SubmissionsService) ProcessSubmission(formID int, r *http.Request, ctx 
 	return s.models.Submissions.Insert(submission, ctx)
 }
 
-func (s *SubmissionsService) GetSubmissionFromRequest(form types.FormData, r *http.Request, ctx context.Context) (types.SubmissionData, error) {
+func (s *Services) GetSubmissionFromRequest(form types.FormData, r *http.Request, ctx context.Context) (types.SubmissionData, error) {
 	formInstanceID, err := s.models.Forms.GetFormInstanceID(form.ID)
 	if err != nil {
 		return types.SubmissionData{}, err

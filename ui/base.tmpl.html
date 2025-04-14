@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ .Title }} - Crear Formulario</title>
+    <title>{{ template "title" }} - Formy</title>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
@@ -190,29 +190,19 @@
 
 </head>
 
-<body class="bg-gray-100 text-gray-800">
-    <div class="flex min-h-screen">
-        {{ with .Dashboard }}
-        <aside id="dashboard-aside" class="w-64 bg-white shadow-lg p-6 space-y-6">
-            <h2 class="text-2xl font-bold text-blue-600 mb-4">Mi Dashboard</h2>
-        </aside>
+<body class="bg-gray-100 text-gray-800 flex flex-col">
+    <main class="flex-1">
+        {{ with .Toast }}
+        <div class="toast">{{ . }}</div>
         {{ end }}
 
-        <main class="flex-1 p-8 space-y-12">
-            {{ with .Toast }}
-            <div class="toast">{{ . }}</div>
-            {{ end }}
+        {{ template "main" . }}
 
-            {{ template "main" . }}
-
-        </main>
-
-        <footer>
-            {{ .Year }} - HapaxRedux &copy;
-        </footer>
-    </div>
+    </main>
+    <footer class="text-center py-4">
+        {{ .Year }} - HapaxRedux &copy;
+    </footer>
 </body>
 
 </html>
-
 {{ end }}

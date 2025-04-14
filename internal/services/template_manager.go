@@ -30,7 +30,6 @@ type TemplateData struct {
 	Flash           string
 	IsAuthenticated bool
 	CSRFToken       string
-	Title           string
 	Dashboard       bool
 	Toast           bool
 	//UserData        *models.UserData
@@ -80,7 +79,6 @@ func (tm *TemplateManager) compileTemplates() error {
 	tm.Lock()
 	defer tm.Unlock()
 
-	//tmpl := template.New("")
 	templates := make(map[string]*template.Template)
 
 	err := filepath.Walk(PagesDir, func(path string, info fs.FileInfo, err error) error {
