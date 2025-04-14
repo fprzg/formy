@@ -15,6 +15,8 @@ type Controllers struct {
 	e        *echo.Echo
 }
 
+const StaticFilesDir = "../../public"
+
 // func GetControllers() (*Controllers, error) {
 func Get(m *models.Models, s *services.Services, e *echo.Echo) (*Controllers, error) {
 	c := &Controllers{
@@ -23,6 +25,7 @@ func Get(m *models.Models, s *services.Services, e *echo.Echo) (*Controllers, er
 		e:        e,
 	}
 
+	c.staticFiles()
 	c.apiRoutes()
 	c.frontendRoutes()
 	c.uiRoutes()
@@ -34,6 +37,10 @@ func (c *Controllers) pingHandle(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, echo.Map{
 		"status": "working",
 	})
+}
+
+func (c *Controllers) staticFiles() {
+	c.e.Static("/static", StaticFilesDir)
 }
 
 func (c *Controllers) apiRoutes() {

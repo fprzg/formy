@@ -4,22 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario Dinámico</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Dashboard - Crear Formulario</title>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+
             const vencimientoToggle = document.getElementById('vencimiento-toggle');
             const vencimientoField = document.getElementById('vencimiento-field');
             const camposContainer = document.getElementById('campos-container');
             const addCampoBtn = document.getElementById('add-campo');
 
             vencimientoToggle.addEventListener('change', () => {
-                if (vencimientoToggle.checked) {
-                    vencimientoField.classList.remove('hidden');
-                } else {
-                    vencimientoField.classList.add('hidden');
-                }
+                vencimientoField.classList.toggle('hidden', !vencimientoToggle.checked);
             });
 
             addCampoBtn.addEventListener('click', () => {
@@ -63,6 +60,99 @@
             });
         });
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nav = document.createElement('nav');
+            nav.className = 'space-y-4';
+
+            const classBase = 'flex items-center space-x-2';
+            const classSelected = 'text-blue-600 font-semibold';
+            const classNormal = 'text-gray-700 hover:text-blue-600';
+            const links = [
+                {
+                    id: 'aside-see-submissions',
+                    target: 'section-see-submissions',
+                    icon: 'inbox',
+                    text: 'Submissions',
+                    selected: false,
+                },
+                {
+                    id: 'aside-see-forms',
+                    target: 'section-see-forms',
+                    icon: 'file-text',
+                    text: 'Forms',
+                    selected: false,
+                },
+                {
+                    id: 'aside-create-form',
+                    target: 'section-create-form',
+                    icon: 'plus-circle',
+                    text: 'Crear nuevo form',
+                    selected: true,
+                },
+                {
+                    id: 'aside-user',
+                    target: 'section-user',
+                    icon: 'user',
+                    text: 'Usuario',
+                    selected: false,
+                },
+                {
+                    id: 'aside-settings',
+                    target: 'section-settings',
+                    icon: 'settings',
+                    text: 'Ajustes',
+                    selected: false,
+                },
+            ];
+
+            links.forEach(({ id, target, icon, text, selected }) => {
+                const a = document.createElement('a');
+                a.id = id;
+                if (selected) {
+                    a.className = `${classBase} ${classSelected}`;
+                } else {
+                    a.className = `${classBase} ${classNormal}`;
+                    const htmlTarget = document.getElementById(target);
+                    htmlTarget.classList.add('hidden');
+                }
+
+                const i = document.createElement('i');
+                i.setAttribute('data-lucide', icon);
+                i.className = 'w-5 h-5';
+
+                const span = document.createElement('span');
+                span.textContent = text;
+
+                a.addEventListener('click', () => {
+                    links.forEach((link) => {
+                        const htmlTarget = document.getElementById(link.target);
+                        const htmlLink = document.getElementById(link.id)
+
+                        if (link.id == id) {
+                            htmlLink.className = `${classBase} ${classSelected}`;
+                            htmlTarget.classList.remove('hidden');
+                        } else {
+                            htmlLink.className = `${classBase} ${classNormal}`;
+                            htmlTarget.classList.add('hidden');
+                        }
+                    });
+                });
+
+                a.appendChild(i);
+                a.appendChild(span);
+                nav.appendChild(a);
+            });
+
+            document.getElementById('dashboard-aside').appendChild(nav);
+
+            lucide.createIcons();
+        });
+    </script>
+
+    <link rel="stylesheet" href="/static/css/output.css">
+
     <style>
         @keyframes fade-in-down {
             from {
@@ -96,49 +186,99 @@
             animation: fade-out 0.3s ease-in forwards;
         }
     </style>
+
 </head>
 
-<body class="bg-gray-100 p-6 text-gray-800">
-    <div class="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-xl space-y-6">
-        <h1 class="text-3xl font-bold mb-4">Formulario Dinámico</h1>
+<body class="bg-gray-100 text-gray-800">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="dashboard-aside" class="w-64 bg-white shadow-lg p-6 space-y-6">
+            <h2 class="text-2xl font-bold text-blue-600 mb-4">Mi Dashboard</h2>
+        </aside>
 
-        <form class="space-y-6">
-            <div>
-                <label class="block text-sm font-medium">Nombre</label>
-                <input type="text" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"
-                    placeholder="Escribe un nombre">
+        <!-- Main content -->
+        <main class="flex-1 p-8 space-y-12">
+            <!-- Submissions -->
+            <div id="section-see-submissions" class="dashboard-section">
+                <h1>Submissions</h1>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium">Descripción</label>
-                <textarea class="mt-1 w-full rounded-md border-gray-300 shadow-sm"
-                    placeholder="Escribe una descripción"></textarea>
+            <!-- Forms -->
+            <div id="section-see-forms" class="dashboard-section">
+                <h1>Forms</h1>
             </div>
 
-            <div class="flex items-center space-x-2">
-                <input type="checkbox" id="vencimiento-toggle"
-                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                <label for="vencimiento-toggle" class="text-sm font-medium">¿Fecha de vencimiento?</label>
+            <!-- Create New Form -->
+            <div id="section-create-form" class="dashboard-section">
+                <h1 class="text-3xl font-bold mb-4">Crear Formulario</h1>
+
+                <form class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium">Nombre</label>
+                        <input type="text" class="mt-1 w-full rounded-md border-gray-300 shadow-sm"
+                            placeholder="Escribe un nombre">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium">Descripción</label>
+                        <textarea class="mt-1 w-full rounded-md border-gray-300 shadow-sm"
+                            placeholder="Escribe una descripción"></textarea>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="vencimiento-toggle"
+                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="vencimiento-toggle" class="text-sm font-medium">¿Fecha de vencimiento?</label>
+                    </div>
+
+                    <div id="vencimiento-field" class="hidden">
+                        <label class="block text-sm font-medium">Selecciona fecha y hora</label>
+                        <input type="datetime-local" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+
+                    <div>
+                        <h2 class="text-xl font-semibold mb-2">Campos</h2>
+                        <div id="campos-container" class="space-y-4"></div>
+                        <button type="button" id="add-campo"
+                            class="mt-4 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">+
+                            Agregar Campo</button>
+                    </div>
+
+                    <div>
+                        <button type="submit"
+                            class="w-full mt-6 px-4 py-2 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition">Enviar</button>
+                    </div>
+                </form>
             </div>
 
-            <div id="vencimiento-field" class="hidden">
-                <label class="block text-sm font-medium">Selecciona fecha y hora</label>
-                <input type="datetime-local" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+            <div id="section-user" class="dashboard-section">
+                <h1>Usuario Información</h1>
             </div>
 
-            <div>
-                <h2 class="text-xl font-semibold mb-2">Campos</h2>
-                <div id="campos-container" class="space-y-4"></div>
-                <button type="button" id="add-campo"
-                    class="mt-4 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">+
-                    Agregar Campo</button>
-            </div>
+            <!-- Settings -->
+            <div id="section-settings" class="dashboard-section">
+                <h2 class="text-2xl font-bold">Ajustes</h2>
 
-            <div>
-                <button type="submit"
-                    class="w-full mt-6 px-4 py-2 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition">Enviar</button>
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">Actualizar email</h3>
+                    <form hx-post="/actualizar-email" hx-swap="outerHTML" class="space-y-2">
+                        <label class="block text-sm font-medium">Nuevo Email</label>
+                        <input type="email" name="email" class="w-full border rounded p-2" required>
+                        <button type="submit"
+                            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Actualizar</button>
+                    </form>
+                </div>
+
+                <div class="border-t pt-6">
+                    <h3 class="text-lg font-semibold mb-2 text-red-600">Desactivar cuenta</h3>
+                    <form hx-delete="/desactivar-cuenta" hx-confirm="¿Estás seguro de desactivar tu cuenta?"
+                        hx-swap="none">
+                        <button type="submit" class="text-red-600 hover:text-red-800 font-medium">Desactivar
+                            cuenta</button>
+                    </form>
+                </div>
             </div>
-        </form>
+        </main>
     </div>
 </body>
 

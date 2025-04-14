@@ -26,6 +26,11 @@ go.work.sum
 
 # ide files
 .vscode
+__debug_bin*
 
 # databases
 *.db
+
+# tailwind nonsense
+node_modules/
+
