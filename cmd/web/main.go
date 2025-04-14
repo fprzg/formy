@@ -20,6 +20,8 @@ func main() {
 
 	flag.StringVar(&cfg.DBDir, "db-dir", "./app.db", "Database directory.")
 
+	flag.StringVar(&cfg.JWTSecret, "jwt-secret", "some-secret-key", "JWT secret key.")
+
 	// rate-limiter config
 	// smtp server config
 

@@ -2,25 +2,61 @@ package services
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
+	//"github.com/justinas/nosurf"
 	"github.com/labstack/echo/v4"
 )
 
 type TemplateManager struct {
 	sync.RWMutex
-	templates *template.Template
+	templates map[string]*template.Template
 	watcher   *fsnotify.Watcher
 	e         *echo.Echo
 }
 
-const UserInterfaceDir = "../../ui"
+type TemplateData struct {
+	Year int
+	//Form            any
+	Flash           string
+	IsAuthenticated bool
+	CSRFToken       string
+	Title           string
+	Dashboard       bool
+	Toast           bool
+	//UserData        *models.UserData
+}
+
+const (
+	UserInterfaceDir = "../../ui"
+	BaseTemplatePath = "../../ui/base.tmpl.html"
+	PagesDir         = "../../ui/pages"
+)
+
+func NewTemplateData(r *http.Request) *TemplateData {
+	td := &TemplateData{
+		Year:            time.Now().Year(),
+		IsAuthenticated: false,
+		// NOTE(Farid): Se necesita el CSRFToken para recibir la respuesta de los form
+		//CSRFToken: nosurf.Token(r),
+	}
+
+	if r != nil {
+		//td.Flash = app.sessionManager.PopString(r.Context(), "flash")
+		//td.IsAuthenticated = app.isAuthenticated(r)
+	}
+
+	return td
+}
 
 func NewTemplateManager(watchChanges bool, e *echo.Echo) (*TemplateManager, error) {
 	tm := &TemplateManager{
@@ -44,18 +80,29 @@ func (tm *TemplateManager) compileTemplates() error {
 	tm.Lock()
 	defer tm.Unlock()
 
-	tmpl := template.New("")
+	//tmpl := template.New("")
+	templates := make(map[string]*template.Template)
 
-	err := filepath.Walk(UserInterfaceDir, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.Walk(PagesDir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if !info.IsDir() && (strings.HasSuffix(path, ".tmpl") || strings.HasSuffix(path, ".html")) {
-			_, err := tmpl.ParseFiles(path)
+		if !info.IsDir() && (strings.HasSuffix(path, ".tmpl.html") || strings.HasSuffix(path, ".html")) {
+			relPath, err := filepath.Rel(PagesDir, path)
+			if err != nil {
+				return err
+			}
+
+			tmplName := filepath.ToSlash(relPath)
+
+			tmpl, err := template.New("base").ParseFiles(BaseTemplatePath, path)
 			if err != nil {
 				tm.e.Logger.Printf("Error parsing template %s: %v\n", path, err)
+				return nil
 			}
+
+			templates[tmplName] = tmpl
 		}
 
 		return nil
@@ -65,8 +112,8 @@ func (tm *TemplateManager) compileTemplates() error {
 		return err
 	}
 
-	tm.templates = tmpl
-	tm.e.Logger.Printf("[template_manager] Templates compiled.\n")
+	tm.templates = templates
+	tm.e.Logger.Printf("[template_manager] Templates compiled: %d\n", len(templates))
 
 	return nil
 }
@@ -118,8 +165,13 @@ func (tm *TemplateManager) ExecuteTemplate(name string, data interface{}) (strin
 	tm.RLock()
 	defer tm.RUnlock()
 
+	tmpl, ok := tm.templates[name]
+	if !ok {
+		return "", fmt.Errorf("template %s not found", name)
+	}
+
 	var buf bytes.Buffer
-	err := tm.templates.ExecuteTemplate(&buf, name, data)
+	err := tmpl.ExecuteTemplate(&buf, "base", data)
 	if err != nil {
 		return "", err
 	}

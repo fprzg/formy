@@ -19,11 +19,11 @@ type FormsService struct {
 
 type FormsServiceInterface interface {
 	ProcessForm(r *http.Request, ctx context.Context) (int, error)
-	ParseFormFromRequest(r *http.Request, ctx context.Context) (types.FormData, error)
+	GetFormFromRequest(r *http.Request, ctx context.Context) (types.FormData, error)
 }
 
 func (s *FormsService) ProcessForm(r *http.Request, ctx context.Context) (int, error) {
-	formData, err := s.ParseFormFromRequest(r, r.Context())
+	formData, err := s.GetFormFromRequest(r, r.Context())
 	if err != nil {
 		return 0, err
 	}
@@ -36,7 +36,7 @@ func (s *FormsService) ProcessForm(r *http.Request, ctx context.Context) (int, e
 	return formID, nil
 }
 
-func (s *FormsService) ParseFormFromRequest(r *http.Request, ctx context.Context) (types.FormData, error) {
+func (s *FormsService) GetFormFromRequest(r *http.Request, ctx context.Context) (types.FormData, error) {
 	if err := r.ParseForm(); err != nil {
 		return types.FormData{}, err
 	}

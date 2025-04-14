@@ -6,11 +6,33 @@ import (
 	"time"
 )
 
+// //////////////////////////////////////////////////////
+//
+// # APP CONFIG
+//
+// //////////////////////////////////////////////////////
 type AppConfig struct {
-	Port  string
-	Env   string
-	DBDir string
-	UIDir string
+	Port      string
+	Env       string
+	DBDir     string
+	JWTSecret string
+}
+
+// //////////////////////////////////////////////////////
+//
+// # AUTHENTICATION
+//
+// //////////////////////////////////////////////////////
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type Token struct {
+	Token     string    `json:"token"`
+	Username  string    `json:"username"`
+	ExpiresAt time.Time `json:"expires_at"`
+	Revoked   bool      `json:"revoked"`
 }
 
 type UserData struct {
@@ -19,6 +41,11 @@ type UserData struct {
 	Email    string `json:"email"`
 }
 
+// //////////////////////////////////////////////////////
+//
+// # FORMS AND SUBMISSIONS
+//
+// //////////////////////////////////////////////////////
 type FormData struct {
 	UserID      int         `json:"user_id"`
 	ID          int         `json:"id"`

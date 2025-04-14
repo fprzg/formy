@@ -20,7 +20,7 @@ type SubmissionsService struct {
 
 type SubmissionsServiceInterface interface {
 	ProcessSubmission(formID int, r *http.Request, ctx context.Context) (int, error)
-	ParseSubmissionFromRequest(form types.FormData, r *http.Request, ctx context.Context) (types.SubmissionData, error)
+	GetSubmissionFromRequest(form types.FormData, r *http.Request, ctx context.Context) (types.SubmissionData, error)
 }
 
 func (s *SubmissionsService) ProcessSubmission(formID int, r *http.Request, ctx context.Context) (int, error) {
@@ -29,7 +29,7 @@ func (s *SubmissionsService) ProcessSubmission(formID int, r *http.Request, ctx 
 		return 0, err
 	}
 
-	submission, err := s.ParseSubmissionFromRequest(formData, r, ctx)
+	submission, err := s.GetSubmissionFromRequest(formData, r, ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -37,7 +37,7 @@ func (s *SubmissionsService) ProcessSubmission(formID int, r *http.Request, ctx 
 	return s.models.Submissions.Insert(submission, ctx)
 }
 
-func (s *SubmissionsService) ParseSubmissionFromRequest(form types.FormData, r *http.Request, ctx context.Context) (types.SubmissionData, error) {
+func (s *SubmissionsService) GetSubmissionFromRequest(form types.FormData, r *http.Request, ctx context.Context) (types.SubmissionData, error) {
 	formInstanceID, err := s.models.Forms.GetFormInstanceID(form.ID)
 	if err != nil {
 		return types.SubmissionData{}, err

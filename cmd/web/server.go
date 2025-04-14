@@ -52,16 +52,12 @@ func NewServer(cfg types.AppConfig, db *sql.DB) (Server, error) {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	m, err := models.Get(db, e, ctxDuration)
+	tm, err := services.NewTemplateManager(cfg.Env == "development", e)
 	if err != nil {
 		return Server{}, err
 	}
 
-	if err = insertDummyData(m); err != nil {
-		return Server{}, err
-	}
-
-	tm, err := services.NewTemplateManager(cfg.Env == "development", e)
+	m, err := models.Get(db, e, ctxDuration)
 	if err != nil {
 		return Server{}, err
 	}
@@ -71,7 +67,7 @@ func NewServer(cfg types.AppConfig, db *sql.DB) (Server, error) {
 		return Server{}, err
 	}
 
-	c, err := controllers.Get(m, s, e)
+	c, err := controllers.Get(m, s, e, cfg.JWTSecret)
 	if err != nil {
 		return Server{}, err
 	}

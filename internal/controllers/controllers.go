@@ -1,28 +1,97 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"formy.fprzg.net/internal/models"
 	"formy.fprzg.net/internal/services"
+	"github.com/golang-jwt/jwt/v5"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 )
 
 type Controllers struct {
-	models   *models.Models
-	services *services.Services
-	e        *echo.Echo
+	models    *models.Models
+	services  *services.Services
+	e         *echo.Echo
+	jwtSecret string
 }
 
 const StaticFilesDir = "../../public"
 
-// func GetControllers() (*Controllers, error) {
-func Get(m *models.Models, s *services.Services, e *echo.Echo) (*Controllers, error) {
+var secret string
+
+type jwtCustomClaims struct {
+	Name  string `json:"name"`
+	Admin bool   `json:"admin"`
+	jwt.RegisteredClaims
+}
+
+func (c *Controllers) login(ctx echo.Context) error {
+	username := ctx.FormValue("username")
+	password := ctx.FormValue("password")
+
+	if username != "jon" || password != "xx" {
+		return echo.ErrUnauthorized
+	}
+
+	claims := &jwtCustomClaims{
+		Name:  "Jon Snow",
+		Admin: true,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	t, err := token.SignedString([]byte(c.jwtSecret))
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, echo.Map{
+		"token": t,
+	})
+}
+
+func accessible(c echo.Context) error {
+	return c.String(http.StatusOK, "Accessible")
+}
+
+func restricted(c echo.Context) error {
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(*jwtCustomClaims)
+	name := claims.Name
+
+	return c.String(http.StatusOK, "Welcome "+name+"!")
+}
+
+func Get(m *models.Models, s *services.Services, e *echo.Echo, jwtSecret string) (*Controllers, error) {
 	c := &Controllers{
-		models:   m,
-		services: s,
-		e:        e,
+		models:    m,
+		services:  s,
+		e:         e,
+		jwtSecret: jwtSecret,
+	}
+
+	e.POST("/login", c.login)
+	e.GET("/", accessible)
+	{
+
+		r := e.Group("/restricted")
+		config := echojwt.Config{
+			//KeyFunc: getKey,
+			NewClaimsFunc: func(c echo.Context) jwt.Claims {
+				return new(jwtCustomClaims)
+			},
+			SigningKey: []byte(jwtSecret),
+		}
+		r.Use(echojwt.WithConfig(config))
+		r.GET("", restricted)
 	}
 
 	c.staticFiles()
@@ -59,12 +128,14 @@ func (c *Controllers) apiRoutes() {
 func (c *Controllers) frontendRoutes() {
 	g := c.e.Group("")
 
-	g.GET("/xx", c.dummyFormHandler)
+	g.GET("/dash", c.dashboardHandler)
 	g.GET("/ping", c.pingHandle)
 }
 
 func (c *Controllers) uiRoutes() {
-	_ = c.e.Group("/ui")
+	g := c.e.Group("/ui")
+
+	g.POST("/form/new", c.uiFormNew)
 
 	//e.GET("/user/:id", uiUsersGethandler)
 	//e.GET("/form/:id", uiFormsGethandler)
@@ -164,38 +235,25 @@ func (c *Controllers) submissionNewHandle(ctx echo.Context) error {
 	})
 }
 
-func (c *Controllers) dummyFormHandler(ctx echo.Context) error {
-	/*
-		const html = `
-		<!DOCTYPE html>
-		<html>
-		<body>
-			<h2>Simple Form</h2>
-			<form method="POST" action="/api/submit/1">
-				<div>
-					<label>Name:</label><br>
-					<input type="text" name="name" required><br>
-				</div>
-				<div>
-					<label>Email:</label><br>
-					<input type="email" name="email" required><br>
-				</div>
-				<div>
-					<label>Message:</label><br>
-					<input type="text" name="message" required><br>
-				</div>
-				<div>
-					<input type="submit" value="Submit">
-				</div>
-			</form>
-		</body>
-		</html>`
+func (c *Controllers) dashboardHandler(ctx echo.Context) error {
+	td := services.NewTemplateData(ctx.Request())
+	td.Title = "Dashboard"
+	td.Dashboard = true
+	return c.render(ctx, "dash.tmpl.html", td)
+}
 
-		return ctx.HTML(http.StatusOK, html)
-	*/
-	html, err := c.services.TemplateManager.ExecuteTemplate("base.tmpl.html", map[string]string{
-		"__": "None",
-	})
+func (c *Controllers) uiFormNew(ctx echo.Context) error {
+	r := ctx.Request()
+	formID, err := c.services.Forms.ProcessForm(r, r.Context())
+	if err != nil {
+		return ctx.String(http.StatusBadRequest, err.Error())
+	}
+
+	return ctx.String(http.StatusOK, fmt.Sprintf("%d", formID))
+}
+
+func (c *Controllers) render(ctx echo.Context, templateName string, td any) error {
+	html, err := c.services.TemplateManager.ExecuteTemplate(templateName, td)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
