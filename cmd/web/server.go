@@ -58,8 +58,9 @@ func NewServer(cfg types.AppConfig, db *sql.DB) (Server, error) {
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(services.JWTCustomClaims)
 		},
-		SigningKey:  []byte(cfg.JWTSecret),
-		TokenLookup: "cookie:jwt",
+		SigningKey:   []byte(cfg.JWTSecret),
+		TokenLookup:  "cookie:jwt",
+		ErrorHandler: errorHandler,
 	}
 
 	tm, err := services.NewTemplateManager(cfg.Env == "development", e)
@@ -95,6 +96,10 @@ func NewServer(cfg types.AppConfig, db *sql.DB) (Server, error) {
 		s:    s,
 		c:    c,
 	}, nil
+}
+
+func errorHandler(c echo.Context, err error) error {
+	return c.Redirect(http.StatusSeeOther, "/users/login")
 }
 
 func (srv *Server) Shutdown(ctx context.Context) error {
