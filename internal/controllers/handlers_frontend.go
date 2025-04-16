@@ -58,11 +58,17 @@ func (ct *Controllers) handlerHomePageGet(c echo.Context) error {
 }
 
 func (ct *Controllers) handlerDashboardGet(c echo.Context) error {
+	td := services.NewTemplateData(c.Request())
+
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(*services.JWTCustomClaims)
-	_ = claims.UserName
+	userData, err := ct.models.Users.Get(claims.UserID)
+	if err != nil {
+		return err
+	}
 
-	td := services.NewTemplateData(c.Request())
+	td.UserData = userData
+
 	td.Dashboard = true
 	return ct.render(c, "dash.tmpl.html", td)
 }

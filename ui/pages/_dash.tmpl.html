@@ -1,0 +1,105 @@
+{{ define "title" }} Dashboard {{ end }}
+
+{{ define "main" }}
+<div class="flex min-h-screen">
+
+    <aside id="dashboard-aside" class="w-64 bg-white shadow-lg p-6 space-y-6">
+        <h2 class="text-2xl font-bold text-blue-600 mb-4">Mi Dashboard</h2>
+    </aside>
+
+    <div class="flex-1 p-8 space-y-12">
+        {{ template "submissions" .SubmissionsData }}
+        {{ template "forms" .FormsData }}
+        {{ template "create-form" . }}
+        {{ template "user" .UserData }}
+        {{ template "settings" . }}
+    </div>
+</div>
+{{ end }}
+
+{{ block "submissions" . }}
+<section id="section-see-submissions" class="dashboard-section">
+    <h1>Submissions</h1>
+</section>
+{{ end }}
+
+{{ block "forms" . }}
+<section id="section-see-forms" class="dashboard-section">
+    <h1>Forms</h1>
+</section>
+{{ end }}
+
+{{ block "create-form" . }}
+<section id="section-create-form" class="dashboard-section">
+    <h1 class="text-3xl font-bold mb-4">Crear Formulario</h1>
+
+    <form class="space-y-6" action="/api/form/create" method="POST">
+        <div>
+            <label class="block text-sm font-medium">Nombre</label>
+            <input type="text" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" placeholder="Escribe un nombre">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium">Descripción</label>
+            <textarea class="mt-1 w-full rounded-md border-gray-300 shadow-sm"
+                placeholder="Escribe una descripción"></textarea>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <input type="checkbox" id="vencimiento-toggle"
+                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+            <label for="vencimiento-toggle" class="text-sm font-medium">¿Fecha de vencimiento?</label>
+        </div>
+
+        <div id="vencimiento-field" class="hidden">
+            <label class="block text-sm font-medium">Selecciona fecha y hora</label>
+            <input type="datetime-local" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+        </div>
+
+        <div>
+            <h2 class="text-xl font-semibold mb-2">Campos</h2>
+            <div id="campos-container" class="space-y-4"></div>
+            <button type="button" id="add-campo"
+                class="mt-4 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">+
+                Agregar Campo</button>
+        </div>
+
+        <div>
+            <button type="submit"
+                class="w-full mt-6 px-4 py-2 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition">Enviar</button>
+        </div>
+    </form>
+</section>
+{{ end }}
+
+{{ block "user" . }}
+<section id="section-user" class="dashboard-section">
+    <h1 class="text-2xl">Usuario</h1>
+    <h1>User name: {{ .UserName }}</h1>
+    <h1>Joined: {{ .CreatedAt }}</h1>
+    <a href="/users/logout" class="text-red-600 hover:text-red-800">Cerrar Sesión</a>
+</section>
+{{ end }}
+
+{{ block "settings" . }}
+<section id="section-settings" class="dashboard-section">
+    <h2 class="text-2xl font-bold">Ajustes</h2>
+
+    <div>
+        <h3 class="text-lg font-semibold mb-2">Actualizar email</h3>
+        <form hx-post="/actualizar-email" hx-swap="outerHTML" class="space-y-2">
+            <label class="block text-sm font-medium">Nuevo Email</label>
+            <input type="email" name="email" class="w-full border rounded p-2" required>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Actualizar</button>
+        </form>
+    </div>
+
+    <div class="border-t pt-6">
+        <h3 class="text-lg font-semibold mb-2 text-red-600">Desactivar cuenta</h3>
+        <form hx-delete="/desactivar-cuenta" hx-confirm="¿Estás seguro de desactivar tu cuenta?" hx-swap="none">
+            <button type="submit" class="text-red-600 hover:text-red-800 font-medium">Desactivar
+                cuenta</button>
+        </form>
+    </div>
+</section>
+{{ end }}

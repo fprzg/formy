@@ -12,7 +12,9 @@ import (
 	"sync"
 	"time"
 
+	"formy.fprzg.net/internal/models"
 	"github.com/fsnotify/fsnotify"
+
 	//"github.com/justinas/nosurf"
 	"github.com/labstack/echo/v4"
 )
@@ -25,14 +27,15 @@ type TemplateManager struct {
 }
 
 type TemplateData struct {
-	Year int
-	//Form            any
-	Flash           string
-	IsAuthenticated bool
+	Year  int
+	Flash string
+	//IsAuthenticated bool
 	CSRFToken       string
 	Dashboard       bool
-	Toast           bool
-	//UserData        *models.UserData
+	Toast           string
+	FormsData       map[string]any
+	SubmissionsData map[string]any
+	UserData        models.User
 }
 
 const (
@@ -43,8 +46,13 @@ const (
 
 func NewTemplateData(r *http.Request) *TemplateData {
 	td := &TemplateData{
-		Year:            time.Now().Year(),
-		IsAuthenticated: false,
+		Year:  time.Now().Year(),
+		Toast: "",
+		//FormsData:       make(map[string]any),
+		//SubmissionsData: make(map[string]any),
+		//UserData:        make(map[string]any),
+		//IsAuthenticated: false,
+
 		// NOTE(Farid): Se necesita el CSRFToken para recibir la respuesta de los form
 		//CSRFToken: nosurf.Token(r),
 	}
